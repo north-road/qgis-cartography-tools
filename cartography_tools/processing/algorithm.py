@@ -381,7 +381,7 @@ class RemoveCuldesacsAlgorithm(QgsProcessingAlgorithm):
             feedback.setProgress(int(current * total))
 
         total = 90.0 / len(roads)
-        filtered = {}
+        removed = 0
         current = 0
         for id, f in roads.items():
             if feedback.isCanceled():
@@ -396,10 +396,17 @@ class RemoveCuldesacsAlgorithm(QgsProcessingAlgorithm):
             touching_candidates = index.intersects(f.geometry().boundingBox())
             if len(touching_candidates) == 1:
                 # small street, touching nothing but itself -- kill it!
+                removed += 1
                 feedback.setProgress(10 + int(current * total))
                 continue
 
-            candidate = f.geometry().constGet().clone()
+            if not f.geometry().isMultipart():
+                candidate = f.geometry().constGet().clone()
+            else:
+                if f.geometry().constGet().numGeometries() > 1:
+                    raise QgsProcessingException(self.tr('Only single-part geometries are supported'))
+                candidate = f.geometry().constGet().geometryN(0).clone()
+
             candidate_start = candidate.startPoint()
             candidate_end = candidate.endPoint()
             start_engine = QgsGeometry.createGeometryEngine(candidate_start)
@@ -423,6 +430,10 @@ class RemoveCuldesacsAlgorithm(QgsProcessingAlgorithm):
                 # keep it, it joins two roads
                 sink.addFeature(f, QgsFeatureSink.FastInsert)
                 continue
+            else:
+                removed += 1
+
+        feedback.pushInfo(self.tr('Removed {} cul-de-sacs'.format(removed)))
 
         return {self.OUTPUT: dest_id}
 
@@ -525,6 +536,7 @@ class RemoveCrossRoadsAlgorithm(QgsProcessingAlgorithm):
 
         total = 90.0 / len(roads)
         current = 0
+        removed = 0
         for id, f in roads.items():
             if feedback.isCanceled():
                 break
@@ -574,8 +586,10 @@ class RemoveCrossRoadsAlgorithm(QgsProcessingAlgorithm):
 
             if touching_start_count >= 2 and touching_end_count >= 2:
                 # kill it
-                pass
+                removed += 1
             else:
                 sink.addFeature(f, QgsFeatureSink.FastInsert)
+
+        feedback.pushInfo(self.tr('Removed {} cross roads'.format(removed)))
 
         return {self.OUTPUT: dest_id}
