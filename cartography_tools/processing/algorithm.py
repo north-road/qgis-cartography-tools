@@ -540,8 +540,6 @@ class RemoveCrossRoadsAlgorithm(QgsProcessingAlgorithm):
             # with matching identifier attributes
 
             candidate_attrs = [f.attributes()[i] for i in field_indices]
-            feedback.pushInfo('------')
-            feedback.pushInfo(','.join([str(e) for e in candidate_attrs]))
 
             touching_candidates = index.intersects(f.geometry().boundingBox())
             candidate = f.geometry().constGet().clone()
@@ -558,7 +556,6 @@ class RemoveCrossRoadsAlgorithm(QgsProcessingAlgorithm):
                 other = roads[t]
 
                 other_attrs = [other.attributes()[i] for i in field_indices]
-                feedback.pushInfo(','.join([str(e) for e in other_attrs]))
                 if other_attrs != candidate_attrs:
                     continue
 
@@ -575,7 +572,6 @@ class RemoveCrossRoadsAlgorithm(QgsProcessingAlgorithm):
 
             feedback.setProgress(10 + int(current * total))
 
-            feedback.pushInfo('{}, {}'.format(touching_start_count, touching_end_count))
             if touching_start_count >= 2 and touching_end_count >= 2:
                 # kill it
                 pass
