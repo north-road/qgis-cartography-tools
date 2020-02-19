@@ -26,6 +26,7 @@ from qgis.core import (QgsWkbTypes,
                        QgsProcessingAlgorithm,
                        QgsProcessingParameterFeatureSource,
                        QgsProcessingParameterExpression,
+                       QgsProcessingParameterDistance,
                        QgsProcessingParameterFeatureSink)
 
 
@@ -47,10 +48,10 @@ class RemoveRoundaboutsAlgorithm(QgsProcessingAlgorithm):
         return self.tr('Remove roundabouts')
 
     def group(self):
-        return self.tr('Cartography')
+        return self.tr('Road networks')
 
     def groupId(self):
-        return 'cartography'
+        return 'road'
 
     def shortHelpString(self):
         return self.tr("Generalizes a road network by removing roundabouts")
@@ -279,5 +280,139 @@ class RemoveRoundaboutsAlgorithm(QgsProcessingAlgorithm):
             sink.addFeature(f, QgsFeatureSink.FastInsert)
             current += 1
             feedback.setProgress(95 + int(current * total))
+
+        return {self.OUTPUT: dest_id}
+
+
+class RemoveCuldesacsAlgorithm(QgsProcessingAlgorithm):
+    INPUT = 'INPUT'
+    THRESHOLD = 'THRESHOLD'
+    OUTPUT = 'OUTPUT'
+
+    def tr(self, string):
+        return QCoreApplication.translate('Processing', string)
+
+    def createInstance(self):
+        return RemoveCuldesacsAlgorithm()
+
+    def name(self):
+        return 'removeculdesacs'
+
+    def displayName(self):
+        return self.tr('Remove cul-de-sacs')
+
+    def group(self):
+        return self.tr('Road networks')
+
+    def groupId(self):
+        return 'road'
+
+    def shortHelpString(self):
+        return self.tr("Generalizes a road network by removing cul-de-sacs")
+
+    def initAlgorithm(self, config=None):
+        self.addParameter(
+            QgsProcessingParameterFeatureSource(
+                self.INPUT,
+                self.tr('Input layer'),
+                [QgsProcessing.TypeVectorLine]
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterDistance(
+                self.THRESHOLD,
+                self.tr('Minimum length to retain'),
+                0.0003, self.INPUT, minValue=0)
+        )
+
+        self.addParameter(
+            QgsProcessingParameterFeatureSink(
+                self.OUTPUT,
+                self.tr('Output layer')
+            )
+        )
+
+    def processAlgorithm(self, parameters, context, feedback):
+        source = self.parameterAsSource(
+            parameters,
+            self.INPUT,
+            context
+        )
+
+        if source is None:
+            raise QgsProcessingException(self.invalidSourceError(parameters, self.INPUT))
+
+        (sink, dest_id) = self.parameterAsSink(
+            parameters,
+            self.OUTPUT,
+            context,
+            source.fields(),
+            source.wkbType(),
+            source.sourceCrs()
+        )
+        if sink is None:
+            raise QgsProcessingException(self.invalidSinkError(parameters, self.OUTPUT))
+
+        threshold = self.parameterAsDouble(parameters, self.THRESHOLD, context)
+
+        index = QgsSpatialIndex()
+        roads = {}
+
+        total = 10.0 / source.featureCount() if source.featureCount() else 0
+        features = source.getFeatures()
+
+        for current, feature in enumerate(features):
+            if feedback.isCanceled():
+                break
+
+            index.addFeature(feature)
+            roads[feature.id()] = feature
+
+            feedback.setProgress(int(current * total))
+
+        total = 90.0 / len(roads)
+        filtered = {}
+        current = 0
+        for id, f in roads.items():
+            if feedback.isCanceled():
+                break
+
+            current += 1
+            if f.geometry().length() >= threshold:
+                sink.addFeature(f, QgsFeatureSink.FastInsert)
+                feedback.setProgress(10 + int(current * total))
+                continue
+
+            touching_candidates = index.intersects(f.geometry().boundingBox())
+            if len(touching_candidates) == 1:
+                # small street, touching nothing but itself -- kill it!
+                feedback.setProgress(10 + int(current * total))
+                continue
+
+            candidate = f.geometry().constGet().clone()
+            candidate_start = candidate.startPoint()
+            candidate_end = candidate.endPoint()
+            start_engine = QgsGeometry.createGeometryEngine(candidate_start)
+            end_engine = QgsGeometry.createGeometryEngine(candidate_end)
+            touching_start = False
+            touching_end = False
+            for t in touching_candidates:
+                if t == id:
+                    continue
+
+                if start_engine.intersects(roads[t].geometry().constGet()):
+                    touching_start = True
+                if end_engine.intersects(roads[t].geometry().constGet()):
+                    touching_end = True
+
+                if touching_start and touching_end:
+                    break
+
+            feedback.setProgress(10 + int(current * total))
+            if touching_start and touching_end:
+                # keep it, it joins two roads
+                sink.addFeature(f, QgsFeatureSink.FastInsert)
+                continue
 
         return {self.OUTPUT: dest_id}
