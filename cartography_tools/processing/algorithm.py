@@ -17,11 +17,10 @@ from qgis.core import (QgsWkbTypes,
                        QgsProcessing,
                        QgsFeatureSink,
                        QgsSpatialIndex,
-                       QgsLineString,
                        QgsGeometry,
                        QgsFeature,
                        QgsVertexId,
-                       QgsPoint,
+                       QgsMapLayer,
                        QgsProcessingException,
                        QgsProcessingAlgorithm,
                        QgsProcessingParameterField,
@@ -589,6 +588,11 @@ class AverageLinesAlgorithm(QgsProcessingAlgorithm):
     def displayName(self):
         return self.tr('Average linestrings')
 
+    def flags(self):
+        f = super().flags()
+        f |= QgsProcessingAlgorithm.FlagSupportsInPlaceEdits
+        return f
+
     def group(self):
         return self.tr('General')
 
@@ -597,6 +601,9 @@ class AverageLinesAlgorithm(QgsProcessingAlgorithm):
 
     def shortHelpString(self):
         return self.tr("Creates an average of a set of linestring inputs")
+
+    def supportInPlaceEdit(self, layer):
+        return layer.type() == QgsMapLayer.VectorLayer and layer.geometryType() == QgsWkbTypes.LineGeometry
 
     def initAlgorithm(self, config=None):
         self.addParameter(
