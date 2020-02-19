@@ -29,6 +29,7 @@ from qgis.core import (QgsWkbTypes,
                        QgsProcessingParameterExpression,
                        QgsProcessingParameterDistance,
                        QgsProcessingParameterFeatureSink)
+from cartography_tools.processing.geometry import GeometryUtils
 
 
 class RemoveRoundaboutsAlgorithm(QgsProcessingAlgorithm):
@@ -80,30 +81,6 @@ class RemoveRoundaboutsAlgorithm(QgsProcessingAlgorithm):
                 self.tr('Output layer')
             )
         )
-
-    @staticmethod
-    def average_linestrings(line1, line2):
-        g1 = line1.clone()
-        g2 = line2.clone()
-
-        # project points from g2 onto g1
-        for n in range(g2.numPoints()):
-            vertex = g2.pointN(n)
-            _, pt, after, _ = g1.closestSegment(vertex)
-            g1.insertVertex(QgsVertexId(0, 0, after.vertex), pt)
-
-        # iterate through vertices in g1
-        out = []
-        for n in range(g1.numPoints()):
-            vertex = g1.pointN(n)
-            _, pt, after, _ = g2.closestSegment(vertex)
-
-            # average pts
-            x = (vertex.x() + pt.x()) / 2
-            y = (vertex.y() + pt.y()) / 2
-            out.append(QgsPoint(x, y))
-
-        return QgsLineString(out)
 
     def processAlgorithm(self, parameters, context, feedback):
         source = self.parameterAsSource(
@@ -260,8 +237,8 @@ class RemoveRoundaboutsAlgorithm(QgsProcessingAlgorithm):
                     averaged.add(src_part)
                     averaged.add(other_part)
 
-                    averaged_line = self.average_linestrings(not_roundabouts[src_part].geometry().constGet(),
-                                                             not_roundabouts[other_part].geometry().constGet())
+                    averaged_line = GeometryUtils.average_linestrings(not_roundabouts[src_part].geometry().constGet(),
+                                                                      not_roundabouts[other_part].geometry().constGet())
 
                     if started_at_roundabout1:
                         # extend start of line to roundabout centroid
@@ -477,8 +454,9 @@ class RemoveCrossRoadsAlgorithm(QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterField(
                 self.FIELDS,
-                self.tr('Attributes which identify unique roads'), allowMultiple=True, parentLayerParameterName=self.INPUT
-                )
+                self.tr('Attributes which identify unique roads'), allowMultiple=True,
+                parentLayerParameterName=self.INPUT
+            )
         )
 
         self.addParameter(
@@ -591,5 +569,98 @@ class RemoveCrossRoadsAlgorithm(QgsProcessingAlgorithm):
                 sink.addFeature(f, QgsFeatureSink.FastInsert)
 
         feedback.pushInfo(self.tr('Removed {} cross roads'.format(removed)))
+
+        return {self.OUTPUT: dest_id}
+
+
+class AverageLinesAlgorithm(QgsProcessingAlgorithm):
+    INPUT = 'INPUT'
+    OUTPUT = 'OUTPUT'
+
+    def tr(self, string):
+        return QCoreApplication.translate('Processing', string)
+
+    def createInstance(self):
+        return AverageLinesAlgorithm()
+
+    def name(self):
+        return 'averagelines'
+
+    def displayName(self):
+        return self.tr('Average linestrings')
+
+    def group(self):
+        return self.tr('General')
+
+    def groupId(self):
+        return 'general'
+
+    def shortHelpString(self):
+        return self.tr("Creates an average of a set of linestring inputs")
+
+    def initAlgorithm(self, config=None):
+        self.addParameter(
+            QgsProcessingParameterFeatureSource(
+                self.INPUT,
+                self.tr('Input layer'),
+                [QgsProcessing.TypeVectorLine]
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterFeatureSink(
+                self.OUTPUT,
+                self.tr('Output layer')
+            )
+        )
+
+    def processAlgorithm(self, parameters, context, feedback):
+        source = self.parameterAsSource(
+            parameters,
+            self.INPUT,
+            context
+        )
+
+        if source is None:
+            raise QgsProcessingException(self.invalidSourceError(parameters, self.INPUT))
+
+        (sink, dest_id) = self.parameterAsSink(
+            parameters,
+            self.OUTPUT,
+            context,
+            source.fields(),
+            source.wkbType(),
+            source.sourceCrs()
+        )
+        if sink is None:
+            raise QgsProcessingException(self.invalidSinkError(parameters, self.OUTPUT))
+
+        total = 100.0 / source.featureCount() if source.featureCount() else 0
+        features = source.getFeatures()
+
+        linestring = None
+        f = None
+        weight = 0
+        for current, feature in enumerate(features):
+            if feedback.isCanceled():
+                break
+
+            if not feature.geometry().isMultipart():
+                candidate = feature.geometry().constGet().clone()
+            else:
+                if feature.geometry().constGet().numGeometries() > 1:
+                    raise QgsProcessingException(self.tr('Only single-part geometries are supported'))
+                candidate = feature.geometry().constGet().geometryN(0).clone()
+
+            if linestring is None:
+                linestring = candidate.clone()
+                f = QgsFeature(feature)
+            else:
+                weight += 1
+                linestring = GeometryUtils.average_linestrings(linestring, candidate, weight)
+
+
+        f.setGeometry(linestring)
+        sink.addFeature(f, QgsFeatureSink.FastInsert)
 
         return {self.OUTPUT: dest_id}
