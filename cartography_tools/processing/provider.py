@@ -23,7 +23,8 @@ from qgis.core import QgsProcessingProvider
 
 from cartography_tools.processing.algorithm import (
     RemoveRoundaboutsAlgorithm,
-    RemoveCuldesacsAlgorithm
+    RemoveCuldesacsAlgorithm,
+    RemoveCrossRoadsAlgorithm
 )
 from cartography_tools.gui.gui_utils import GuiUtils
 
@@ -71,7 +72,7 @@ class CartographyToolsProvider(QgsProcessingProvider):
         """
         Called when provider must populate its available algorithms
         """
-        for a in [RemoveRoundaboutsAlgorithm, RemoveCuldesacsAlgorithm]:
+        for a in [RemoveRoundaboutsAlgorithm, RemoveCuldesacsAlgorithm, RemoveCrossRoadsAlgorithm]:
             self.addAlgorithm(a())
 
     def tr(self, string, context=''):
