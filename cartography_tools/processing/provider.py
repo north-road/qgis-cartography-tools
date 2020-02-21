@@ -25,7 +25,8 @@ from cartography_tools.processing.algorithm import (
     RemoveRoundaboutsAlgorithm,
     RemoveCuldesacsAlgorithm,
     RemoveCrossRoadsAlgorithm,
-    AverageLinesAlgorithm
+    AverageLinesAlgorithm,
+    CollapseDualCarriagewayAlgorithm
 )
 from cartography_tools.gui.gui_utils import GuiUtils
 
@@ -76,7 +77,8 @@ class CartographyToolsProvider(QgsProcessingProvider):
         for a in [RemoveRoundaboutsAlgorithm,
                   RemoveCuldesacsAlgorithm,
                   RemoveCrossRoadsAlgorithm,
-                  AverageLinesAlgorithm]:
+                  AverageLinesAlgorithm,
+                  CollapseDualCarriagewayAlgorithm]:
             self.addAlgorithm(a())
 
     def tr(self, string, context=''):

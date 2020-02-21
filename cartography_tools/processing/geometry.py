@@ -20,11 +20,10 @@ class GeometryUtils:
     @staticmethod
     def average_linestrings(line1, line2, weight=1):
         g1 = line1.clone()
-        g2 = line2.clone()
 
         # project points from g2 onto g1
-        for n in range(g2.numPoints()):
-            vertex = g2.pointN(n)
+        for n in range(line2.numPoints()):
+            vertex = line2.pointN(n)
             _, pt, after, _ = g1.closestSegment(vertex)
             g1.insertVertex(QgsVertexId(0, 0, after.vertex), pt)
 
@@ -32,7 +31,7 @@ class GeometryUtils:
         out = []
         for n in range(g1.numPoints()):
             vertex = g1.pointN(n)
-            _, pt, after, _ = g2.closestSegment(vertex)
+            _, pt, after, _ = line2.closestSegment(vertex)
 
             # average pts
             x = (vertex.x() * weight + pt.x()) / (weight+1)

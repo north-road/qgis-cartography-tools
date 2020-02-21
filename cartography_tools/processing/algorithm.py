@@ -531,7 +531,13 @@ class RemoveCrossRoadsAlgorithm(QgsProcessingAlgorithm):
             candidate_attrs = [f.attributes()[i] for i in field_indices]
 
             touching_candidates = index.intersects(f.geometry().boundingBox())
-            candidate = f.geometry().constGet().clone()
+            if not f.geometry().isMultipart():
+                candidate = f.geometry().constGet().clone()
+            else:
+                if f.geometry().constGet().numGeometries() > 1:
+                    raise QgsProcessingException(self.tr('Only single-part geometries are supported'))
+                candidate = f.geometry().constGet().geometryN(0).clone()
+
             candidate_start = candidate.startPoint()
             candidate_end = candidate.endPoint()
             start_engine = QgsGeometry.createGeometryEngine(candidate_start)
@@ -568,6 +574,237 @@ class RemoveCrossRoadsAlgorithm(QgsProcessingAlgorithm):
                 sink.addFeature(f, QgsFeatureSink.FastInsert)
 
         feedback.pushInfo(self.tr('Removed {} cross roads'.format(removed)))
+
+        return {self.OUTPUT: dest_id}
+
+
+class CollapseDualCarriagewayAlgorithm(QgsProcessingAlgorithm):
+    INPUT = 'INPUT'
+    FIELDS = 'FIELDS'
+    THRESHOLD = 'THRESHOLD'
+    OUTPUT = 'OUTPUT'
+
+    def tr(self, string):
+        return QCoreApplication.translate('Processing', string)
+
+    def createInstance(self):
+        return CollapseDualCarriagewayAlgorithm()
+
+    def name(self):
+        return 'collapsedualcarriageway'
+
+    def displayName(self):
+        return self.tr('Collapse dual carriageways')
+
+    def group(self):
+        return self.tr('Road networks')
+
+    def groupId(self):
+        return 'road'
+
+    def shortHelpString(self):
+        return self.tr("Generalizes a road network by collapsing dual carriageways")
+
+    def initAlgorithm(self, config=None):
+        self.addParameter(
+            QgsProcessingParameterFeatureSource(
+                self.INPUT,
+                self.tr('Input layer'),
+                [QgsProcessing.TypeVectorLine]
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterField(
+                self.FIELDS,
+                self.tr('Attributes which identify unique roads'), allowMultiple=True,
+                parentLayerParameterName=self.INPUT
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterDistance(
+                self.THRESHOLD,
+                self.tr('Maximum separation to collapse'),
+                0.0003, self.INPUT, minValue=0)
+        )
+
+        self.addParameter(
+            QgsProcessingParameterFeatureSink(
+                self.OUTPUT,
+                self.tr('Output layer')
+            )
+        )
+
+    def processAlgorithm(self, parameters, context, feedback):
+        source = self.parameterAsSource(
+            parameters,
+            self.INPUT,
+            context
+        )
+
+        if source is None:
+            raise QgsProcessingException(self.invalidSourceError(parameters, self.INPUT))
+
+        (sink, dest_id) = self.parameterAsSink(
+            parameters,
+            self.OUTPUT,
+            context,
+            source.fields(),
+            source.wkbType(),
+            source.sourceCrs()
+        )
+        if sink is None:
+            raise QgsProcessingException(self.invalidSinkError(parameters, self.OUTPUT))
+
+        threshold = self.parameterAsDouble(parameters, self.THRESHOLD, context)
+        fields = self.parameterAsFields(parameters, self.FIELDS, context)
+        field_indices = [source.fields().lookupField(f) for f in fields]
+        index = QgsSpatialIndex()
+        roads = {}
+
+        total = 10.0 / source.featureCount() if source.featureCount() else 0
+        features = source.getFeatures()
+
+        for current, feature in enumerate(features):
+            if feedback.isCanceled():
+                break
+
+            index.addFeature(feature)
+            roads[feature.id()] = feature
+
+            feedback.setProgress(int(current * total))
+
+        collapsed = {}
+        processed = set()
+
+        total = 85.0 / len(roads)
+        current = 0
+        for id, f in roads.items():
+            if feedback.isCanceled():
+                break
+
+            current += 1
+            feedback.setProgress(10 + current * total)
+
+            if id in processed:
+                continue
+
+            box = f.geometry().boundingBox()
+            box.grow(threshold)
+
+            similar_candidates = index.intersects(box)
+            if not similar_candidates:
+                collapsed[id] = f
+                processed.add(id)
+                continue
+
+            candidate = f.geometry()
+            candidate_attrs = [f.attributes()[i] for i in field_indices]
+
+            parts = []
+
+            for t in similar_candidates:
+                if t == id:
+                    continue
+
+                other = roads[t]
+                other_attrs = [other.attributes()[i] for i in field_indices]
+                if other_attrs != candidate_attrs:
+                    continue
+
+                dist = candidate.hausdorffDistance(other.geometry())
+                if dist < threshold:
+                    parts.append(t)
+
+            if len(parts) == 0:
+                collapsed[id] = f
+                continue
+
+            # todo fix this
+            if len(parts) > 1:
+                continue
+            assert len(parts) == 1, len(parts)
+
+            other = roads[parts[0]].geometry()
+            averaged = QgsGeometry(GeometryUtils.average_linestrings(candidate.constGet(), other.constGet()))
+
+            # reconnect touching lines
+            bbox = candidate.boundingBox()
+            bbox.combineExtentWith(other.boundingBox())
+            touching_candidates = index.intersects(bbox)
+
+            for touching_candidate in touching_candidates:
+                if touching_candidate == id or touching_candidate == parts[0]:
+                    continue
+
+                # print(touching_candidate)
+
+                touching_candidate_geom = roads[touching_candidate].geometry()
+                # either the start or end of touching_candidate_geom touches candidate
+                start = QgsGeometry(touching_candidate_geom.constGet().startPoint())
+                end = QgsGeometry(touching_candidate_geom.constGet().endPoint())
+
+                moved_start = False
+                moved_end = False
+                for cc in [candidate, other]:
+                    start_line = start.shortestLine(cc)
+                    if start_line.length() < threshold:
+                        # start touches, move to touch averaged line
+                        averaged_line = start.shortestLine(averaged)
+                        new_start = averaged_line.constGet().endPoint()
+                        touching_candidate_geom.get().moveVertex(QgsVertexId(0, 0, 0), new_start)
+                        # print('moved start')
+                        moved_start = True
+                        continue
+                    end_line = end.shortestLine(cc)
+                    if end_line.length() < threshold:
+                        # endtouches, move to touch averaged line
+                        averaged_line = end.shortestLine(averaged)
+                        new_end = averaged_line.constGet().endPoint()
+                        touching_candidate_geom.get().moveVertex(
+                            QgsVertexId(0, 0, touching_candidate_geom.constGet().numPoints() - 1), new_end)
+                        # print('moved end')
+                        moved_end = True
+                        #break
+
+                index.deleteFeature(roads[touching_candidate])
+                if moved_start and moved_end:
+                    if touching_candidate in collapsed:
+                        del collapsed[touching_candidate]
+                    processed.add(touching_candidate)
+                else:
+                    roads[touching_candidate].setGeometry(touching_candidate_geom)
+                    index.addFeature(roads[touching_candidate])
+                    if touching_candidate in collapsed:
+                        collapsed[touching_candidate].setGeometry(touching_candidate_geom)
+
+            index.deleteFeature(f)
+            index.deleteFeature(roads[parts[0]])
+
+            ff = QgsFeature(roads[parts[0]])
+            ff.setGeometry(averaged)
+            index.addFeature(ff)
+            roads[ff.id()] = ff
+
+            ff = QgsFeature(f)
+            ff.setGeometry(averaged)
+            index.addFeature(ff)
+            roads[id] = ff
+
+            collapsed[id] = ff
+            processed.add(id)
+            processed.add(parts[0])
+
+        total = 5.0 / len(processed)
+        current = 0
+        for _, f in collapsed.items():
+            if feedback.isCanceled():
+                break
+
+            sink.addFeature(f, QgsFeatureSink.FastInsert)
+            current += 1
+            feedback.setProgress(95 + int(current * total))
 
         return {self.OUTPUT: dest_id}
 
