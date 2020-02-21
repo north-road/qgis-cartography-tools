@@ -754,8 +754,9 @@ class CollapseDualCarriagewayAlgorithm(QgsProcessingAlgorithm):
                 moved_start = False
                 moved_end = False
                 for cc in [candidate, other]:
+                  #  if start.touches(cc):
                     start_line = start.shortestLine(cc)
-                    if start_line.length() < threshold:
+                    if start_line.length() < 0.00000001:
                         # start touches, move to touch averaged line
                         averaged_line = start.shortestLine(averaged)
                         new_start = averaged_line.constGet().endPoint()
@@ -764,7 +765,7 @@ class CollapseDualCarriagewayAlgorithm(QgsProcessingAlgorithm):
                         moved_start = True
                         continue
                     end_line = end.shortestLine(cc)
-                    if end_line.length() < threshold:
+                    if end_line.length() < 0.00000001:
                         # endtouches, move to touch averaged line
                         averaged_line = end.shortestLine(averaged)
                         new_end = averaged_line.constGet().endPoint()
