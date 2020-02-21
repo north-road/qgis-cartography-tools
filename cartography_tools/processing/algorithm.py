@@ -670,6 +670,12 @@ class CollapseDualCarriagewayAlgorithm(QgsProcessingAlgorithm):
             if feedback.isCanceled():
                 break
 
+            if feature.geometry().isMultipart():
+                if feature.geometry().constGet().numGeometries() > 1:
+                    raise QgsProcessingException(self.tr('Only single-part geometries are supported'))
+                part1 = feature.geometry().constGet().geometryN(0).clone()
+                feature.setGeometry(part1)
+
             index.addFeature(feature)
             roads[feature.id()] = feature
 
