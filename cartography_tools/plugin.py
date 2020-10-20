@@ -105,6 +105,7 @@ class CartographyToolsPlugin:
 
         self.create_tools()
 
+        self.previous_layer = self.iface.activeLayer()
         self.iface.currentLayerChanged.connect(self.current_layer_changed)
 
     def create_tools(self):

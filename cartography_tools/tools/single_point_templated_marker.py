@@ -8,43 +8,17 @@ the Free Software Foundation; either version 2 of the License, or
 """
 
 from qgis.PyQt.QtCore import Qt
-from qgis.PyQt import uic
-from qgis.PyQt.QtGui import QFontMetrics
-from qgis.PyQt.QtWidgets import QSizePolicy
 
 from qgis.core import (
     QgsVectorLayer,
     QgsMapLayer,
     QgsMapLayerType,
-    QgsWkbTypes,
-    QgsFieldProxyModel
+    QgsWkbTypes
 )
 from qgis.gui import QgsMapCanvas
 
 from cartography_tools.tools.map_tool import Tool
-from cartography_tools.gui.gui_utils import GuiUtils
-
-WIDGET, BASE = uic.loadUiType(
-    GuiUtils.get_ui_file_path('marker_settings.ui'))
-
-
-class MarkerSettingsWidget(BASE, WIDGET):
-
-    def __init__(self, parent=None):
-        super(MarkerSettingsWidget, self).__init__(parent)
-        self.setupUi(self)
-
-        self.code_combo.setEditable(True)
-        self.code_combo.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred)
-        self.code_combo.setMinimumWidth(QFontMetrics(self.font()).width('X') * 40)
-
-        self.field_rotation_combo.setFilters(QgsFieldProxyModel.Numeric)
-
-        self.setFocusProxy(self.field_code_combo)
-
-    def set_layer(self, layer):
-        self.field_code_combo.setLayer(layer)
-        self.field_rotation_combo.setLayer(layer)
+from cartography_tools.tools.marker_settings_widget import MarkerSettingsWidget
 
 
 class SinglePointTemplatedMarkerTool(Tool):
@@ -53,6 +27,7 @@ class SinglePointTemplatedMarkerTool(Tool):
     def __init__(self, canvas: QgsMapCanvas, cad_dock_widget, iface, action):
         super().__init__(SinglePointTemplatedMarkerTool.ID, action, canvas, cad_dock_widget, iface)
         self.widget = None
+        self.layer = None
 
     def cadCanvasMoveEvent(self, event):  # pylint: disable=missing-docstring
         self.snap_indicator.setMatch(event.mapPointMatch())
@@ -72,11 +47,12 @@ class SinglePointTemplatedMarkerTool(Tool):
         self.widget = MarkerSettingsWidget()
         self.iface.addUserInputWidget(self.widget)
         self.widget.setFocus(Qt.TabFocusReason)
+        self.widget.set_layer(self.layer)
 
     def delete_widget(self):
         if self.widget:
             self.widget.releaseKeyboard()
-
+            self.widget.deleteLater()
             self.widget = None
 
     def deactivate(self):
@@ -88,5 +64,6 @@ class SinglePointTemplatedMarkerTool(Tool):
         self.create_widget()
 
     def set_layer(self, layer: QgsVectorLayer):
+        self.layer = layer
         if self.widget:
             self.widget.set_layer(layer)
