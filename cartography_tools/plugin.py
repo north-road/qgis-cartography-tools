@@ -14,8 +14,13 @@ __copyright__ = 'Copyright 2020, North Road'
 __revision__ = '$Format:%H$'
 
 import os
+
 from qgis.PyQt.QtCore import (QTranslator,
                               QCoreApplication)
+from qgis.PyQt.QtWidgets import (
+    QToolBar
+)
+
 from qgis.core import QgsApplication
 from qgis.gui import QgisInterface
 from cartography_tools.processing.provider import CartographyToolsProvider
@@ -53,6 +58,8 @@ class CartographyToolsPlugin:
         # processing framework
         self.provider = CartographyToolsProvider()
 
+        self.toolbar = None
+
     @staticmethod
     def tr(message):
         """Get the translation for a string using Qt translation API.
@@ -76,6 +83,13 @@ class CartographyToolsPlugin:
         """Creates application GUI widgets"""
         self.initProcessing()
 
+        self.toolbar = QToolBar(self.tr('Cartography Tools'))
+        self.toolbar.setObjectName('cartographyTools')
+        self.iface.addToolBar(self.toolbar)
+
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
         QgsApplication.processingRegistry().removeProvider(self.provider)
+
+        if self.toolbar is not None:
+            self.toolbar.deleteLater()
