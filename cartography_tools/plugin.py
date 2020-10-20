@@ -33,8 +33,9 @@ VERSION = '1.0.0'
 
 class Tool:
 
-    def __init__(self, tool_id):
+    def __init__(self, tool_id, action):
         self._id = tool_id
+        self.action = action
 
     def is_compatible_with_layer(self, layer):
         return True
@@ -63,8 +64,8 @@ class SinglePointTemplatedMarkerTool(Tool):
 
     ID = 'SINGLE_POINT_TEMPLATED_MARKER'
 
-    def __init__(self):
-        super().__init__(SinglePointTemplatedMarkerTool.ID)
+    def __init__(self, action):
+        super().__init__(SinglePointTemplatedMarkerTool.ID, action)
         self.canvas_tool = None
 
     def is_compatible_with_layer(self, layer: QgsMapLayer):
@@ -77,19 +78,12 @@ class SinglePointTemplatedMarkerTool(Tool):
         return layer.geometryType() == QgsWkbTypes.PointGeometry and layer.isEditable()
 
     def activate(self, canvas: QgsMapCanvas, cad_dock_widget):
-        self.canvas_tool = MarkerTool(canvas, cad_dock_widget)
+        if self.canvas_tool is None:
+            self.canvas_tool = MarkerTool(canvas, cad_dock_widget)
+            self.canvas_tool.setAction(self.action)
+
         canvas.setMapTool(self.canvas_tool)
 
-
-class ToolRegistry:
-
-    def __init__(self):
-        self.tools = [
-            SinglePointTemplatedMarkerTool()
-        ]
-
-
-TOOL_REGISTER = ToolRegistry()
 
 
 class CartographyToolsPlugin:
@@ -163,9 +157,10 @@ class CartographyToolsPlugin:
         self.iface.currentLayerChanged.connect(self.current_layer_changed)
 
     def create_tools(self):
-        self.tools[SinglePointTemplatedMarkerTool.ID] = SinglePointTemplatedMarkerTool()
         action_single_point_templated_marker = QAction(GuiUtils.get_icon(
             'plugin.svg'), self.tr('Single Point Templated Marker'))
+        action_single_point_templated_marker.setCheckable(True)
+        self.tools[SinglePointTemplatedMarkerTool.ID] = SinglePointTemplatedMarkerTool(action_single_point_templated_marker)
         action_single_point_templated_marker.triggered.connect(partial(
             self.switch_tool, SinglePointTemplatedMarkerTool.ID))
         action_single_point_templated_marker.setData(SinglePointTemplatedMarkerTool.ID)
