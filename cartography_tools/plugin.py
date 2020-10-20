@@ -23,106 +23,17 @@ from qgis.PyQt.QtWidgets import (
     QAction
 )
 
-from qgis.core import QgsApplication
+from qgis.core import (
+    QgsApplication,
+    QgsMapLayerType
+)
 from qgis.gui import QgisInterface
+
 from cartography_tools.processing.provider import CartographyToolsProvider
 from cartography_tools.gui.gui_utils import GuiUtils
+from cartography_tools.tools.single_point_templated_marker import SinglePointTemplatedMarkerTool
 
 VERSION = '1.0.0'
-
-from qgis.gui import QgsMapToolAdvancedDigitizing, QgsMapCanvas,QgsSnapIndicator
-
-class Tool(QgsMapToolAdvancedDigitizing):
-
-    def __init__(self, tool_id, action, canvas: QgsMapCanvas, cad_dock_width, iface):
-        super().__init__(canvas, cad_dock_width)
-        self._id = tool_id
-        self.setAction(action)
-        self.iface = iface
-
-    def is_compatible_with_layer(self, layer):
-        return True
-
-
-from qgis.core import QgsMapLayer, QgsMapLayerType, QgsWkbTypes, QgsFieldProxyModel
-from qgis.PyQt import uic
-from qgis.PyQt.QtGui import QFontMetrics
-from qgis.PyQt.QtWidgets import QSizePolicy
-
-WIDGET, BASE = uic.loadUiType(
-    GuiUtils.get_ui_file_path('marker_settings.ui'))
-
-class MarkerSettingsWidget(BASE, WIDGET):
-
-    def __init__(self, parent=None):
-        super(MarkerSettingsWidget, self).__init__(parent)
-        self.setupUi(self)
-
-        self.code_combo.setEditable(True)
-        self.code_combo.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred)
-        self.code_combo.setMinimumWidth(QFontMetrics(self.font()).width('X')*40)
-
-        self.field_rotation_combo.setFilters(QgsFieldProxyModel.Numeric)
-
-        self.setFocusProxy(self.field_code_combo)
-
-    def set_layer(self, layer):
-        self.field_code_combo.setLayer(layer)
-        self.field_rotation_combo.setLayer(layer)
-
-
-
-
-
-from qgis.PyQt.QtCore import Qt
-from qgis.core import QgsVectorLayer
-
-class SinglePointTemplatedMarkerTool(Tool):
-
-    ID = 'SINGLE_POINT_TEMPLATED_MARKER'
-
-    def __init__(self, canvas: QgsMapCanvas, cad_dock_widget, iface, action):
-        super().__init__(SinglePointTemplatedMarkerTool.ID, action, canvas, cad_dock_widget, iface)
-        self.snap_indicator = QgsSnapIndicator(self.canvas())
-        self.widget = None
-
-    def cadCanvasMoveEvent(self, event):  # pylint: disable=missing-docstring
-        self.snap_indicator.setMatch(event.mapPointMatch())
-
-    def is_compatible_with_layer(self, layer: QgsMapLayer):
-        if layer is None:
-            return False
-
-        if layer.type() != QgsMapLayerType.VectorLayer:
-            return False
-
-        return layer.geometryType() == QgsWkbTypes.PointGeometry and layer.isEditable()
-
-    def create_widget(self):
-        self.delete_widget()
-
-        self.widget = MarkerSettingsWidget()
-        self.iface.addUserInputWidget(self.widget)
-        self.widget.setFocus(Qt.TabFocusReason)
-
-    def delete_widget(self):
-        if self.widget:
-            self.widget.releaseKeyboard()
-
-            self.widget = None
-
-    def deactivate(self):
-        super().deactivate()
-        self.delete_widget()
-
-    def activate(self):
-        super().activate()
-        self.create_widget()
-
-    def set_layer(self, layer: QgsVectorLayer):
-        if self.widget:
-            self.widget.set_layer(layer)
-
 
 
 class CartographyToolsPlugin:
@@ -201,7 +112,9 @@ class CartographyToolsPlugin:
             'plugin.svg'), self.tr('Single Point Templated Marker'))
         action_single_point_templated_marker.setCheckable(True)
         self.tools[SinglePointTemplatedMarkerTool.ID] = SinglePointTemplatedMarkerTool(self.iface.mapCanvas(),
-                                                                                       self.iface.cadDockWidget(),self.iface,action_single_point_templated_marker)
+                                                                                       self.iface.cadDockWidget(),
+                                                                                       self.iface,
+                                                                                       action_single_point_templated_marker)
         action_single_point_templated_marker.triggered.connect(partial(
             self.switch_tool, SinglePointTemplatedMarkerTool.ID))
         action_single_point_templated_marker.setData(SinglePointTemplatedMarkerTool.ID)
