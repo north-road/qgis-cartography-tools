@@ -39,8 +39,24 @@ class Tool:
     def is_compatible_with_layer(self, layer):
         return True
 
+    def activate(self, canvas, cad_dock_widget):
+        pass
+
 
 from qgis.core import QgsMapLayer, QgsMapLayerType, QgsWkbTypes
+
+
+from qgis.gui import QgsMapToolAdvancedDigitizing, QgsMapCanvas,QgsSnapIndicator
+
+
+class MarkerTool(QgsMapToolAdvancedDigitizing):
+
+    def __init__(self, canvas: QgsMapCanvas, cad_dock_width):
+        super().__init__(canvas, cad_dock_width)
+        self.snap_indicator = QgsSnapIndicator(self.canvas())
+
+    def cadCanvasMoveEvent(self, event):  # pylint: disable=missing-docstring
+        self.snap_indicator.setMatch(event.mapPointMatch())
 
 
 class SinglePointTemplatedMarkerTool(Tool):
@@ -49,6 +65,7 @@ class SinglePointTemplatedMarkerTool(Tool):
 
     def __init__(self):
         super().__init__(SinglePointTemplatedMarkerTool.ID)
+        self.canvas_tool = None
 
     def is_compatible_with_layer(self, layer: QgsMapLayer):
         if layer is None:
@@ -58,6 +75,10 @@ class SinglePointTemplatedMarkerTool(Tool):
             return False
 
         return layer.geometryType() == QgsWkbTypes.PointGeometry and layer.isEditable()
+
+    def activate(self, canvas: QgsMapCanvas, cad_dock_widget):
+        self.canvas_tool = MarkerTool(canvas, cad_dock_widget)
+        canvas.setMapTool(self.canvas_tool)
 
 
 class ToolRegistry:
@@ -165,8 +186,9 @@ class CartographyToolsPlugin:
 
         self.iface.currentLayerChanged.disconnect(self.current_layer_changed)
 
-    def switch_tool(self, tool):
-        pass
+    def switch_tool(self, tool_id):
+        tool = self.tools[tool_id]
+        tool.activate(self.iface.mapCanvas(), self.iface.cadDockWidget())
 
     def current_layer_changed(self, layer):
         if self.edit_start_connection:
