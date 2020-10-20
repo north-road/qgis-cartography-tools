@@ -15,10 +15,17 @@ from qgis.core import (QgsLineString,
                        QgsVertexId,
                        QgsPoint)
 
+
 class GeometryUtils:
+    """
+    Utilities for geometry handling and manipulation
+    """
 
     @staticmethod
     def average_linestrings(line1, line2, weight=1):
+        """
+        Averages two linestring geometries
+        """
         g1 = line1.clone()
 
         # project points from g2 onto g1
@@ -34,8 +41,8 @@ class GeometryUtils:
             _, pt, after, _ = line2.closestSegment(vertex)
 
             # average pts
-            x = (vertex.x() * weight + pt.x()) / (weight+1)
-            y = (vertex.y() * weight + pt.y()) / (weight+1)
+            x = (vertex.x() * weight + pt.x()) / (weight + 1)
+            y = (vertex.y() * weight + pt.y()) / (weight + 1)
             out.append(QgsPoint(x, y))
 
         return QgsLineString(out)

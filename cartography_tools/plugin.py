@@ -25,7 +25,8 @@ from qgis.PyQt.QtWidgets import (
 
 from qgis.core import (
     QgsApplication,
-    QgsMapLayerType
+    QgsMapLayerType,
+    QgsMapLayer
 )
 from qgis.gui import QgisInterface
 
@@ -109,6 +110,9 @@ class CartographyToolsPlugin:
         self.iface.currentLayerChanged.connect(self.current_layer_changed)
 
     def create_tools(self):
+        """
+        Creates all map tools ands add them to the QGIS interface
+        """
         action_single_point_templated_marker = QAction(GuiUtils.get_icon(
             'plugin.svg'), self.tr('Single Point Templated Marker'))
         action_single_point_templated_marker.setCheckable(True)
@@ -136,13 +140,19 @@ class CartographyToolsPlugin:
 
         self.iface.currentLayerChanged.disconnect(self.current_layer_changed)
 
-    def switch_tool(self, tool_id):
+    def switch_tool(self, tool_id: str):
+        """
+        Switches to the tool with the specified tool_id
+        """
         tool = self.tools[tool_id]
         self.iface.mapCanvas().setMapTool(tool)
         self.active_tool = tool
         self.active_tool.set_layer(self.previous_layer)
 
-    def current_layer_changed(self, layer):
+    def current_layer_changed(self, layer: QgsMapLayer):
+        """
+        Called when the current layer changes
+        """
         if self.edit_start_connection:
             self.previous_layer.disconnect(self.edit_start_connection)
             self.edit_start_connection = None
@@ -160,7 +170,10 @@ class CartographyToolsPlugin:
         if self.active_tool:
             self.active_tool.set_layer(layer)
 
-    def enable_actions_for_layer(self, layer):
+    def enable_actions_for_layer(self, layer: QgsMapLayer):
+        """
+        Toggles whether actions should be enabled for the specified layer
+        """
         for action in self.actions:
             if self.tools.get(action.data()):
                 action.setEnabled(self.tools[action.data()].is_compatible_with_layer(layer))

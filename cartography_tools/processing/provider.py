@@ -17,7 +17,6 @@
 ***************************************************************************
 """
 
-import os
 from qgis.PyQt.QtCore import QCoreApplication
 from qgis.core import QgsProcessingProvider
 

@@ -32,32 +32,35 @@ from cartography_tools.processing.geometry import GeometryUtils
 
 
 class RemoveRoundaboutsAlgorithm(QgsProcessingAlgorithm):
+    """
+    Removes roundabouts
+    """
     INPUT = 'INPUT'
     EXPRESSION = 'EXPRESSION'
     OUTPUT = 'OUTPUT'
 
-    def tr(self, string):
+    def tr(self, string):  # pylint: disable=missing-function-docstring
         return QCoreApplication.translate('Processing', string)
 
-    def createInstance(self):
+    def createInstance(self):  # pylint: disable=missing-function-docstring
         return RemoveRoundaboutsAlgorithm()
 
-    def name(self):
+    def name(self):  # pylint: disable=missing-function-docstring
         return 'removeroundabouts'
 
-    def displayName(self):
+    def displayName(self):  # pylint: disable=missing-function-docstring
         return self.tr('Remove roundabouts')
 
-    def group(self):
+    def group(self):  # pylint: disable=missing-function-docstring
         return self.tr('Road networks')
 
-    def groupId(self):
+    def groupId(self):  # pylint: disable=missing-function-docstring
         return 'road'
 
-    def shortHelpString(self):
+    def shortHelpString(self):  # pylint: disable=missing-function-docstring
         return self.tr("Generalizes a road network by removing roundabouts")
 
-    def initAlgorithm(self, config=None):
+    def initAlgorithm(self, config=None):  # pylint: disable=missing-function-docstring,unused-argument
         self.addParameter(
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
@@ -81,7 +84,10 @@ class RemoveRoundaboutsAlgorithm(QgsProcessingAlgorithm):
             )
         )
 
-    def processAlgorithm(self, parameters, context, feedback):
+    def processAlgorithm(self,  # pylint: disable=missing-function-docstring,too-many-statements,too-many-branches,too-many-locals
+                         parameters,
+                         context,
+                         feedback):
         source = self.parameterAsSource(
             parameters,
             self.INPUT,
@@ -116,15 +122,15 @@ class RemoveRoundaboutsAlgorithm(QgsProcessingAlgorithm):
         total = 10.0 / source.featureCount() if source.featureCount() else 0
         features = source.getFeatures()
 
-        id = 1
+        _id = 1
         for current, feature in enumerate(features):
             if feedback.isCanceled():
                 break
 
-            def add_feature(f, id, geom, is_roundabout):
+            def add_feature(f, _id, geom, is_roundabout):
                 output_feature = QgsFeature(f)
                 output_feature.setGeometry(geom)
-                output_feature.setId(id)
+                output_feature.setId(_id)
                 if is_roundabout:
                     roundabouts.append(output_feature)
                 else:
@@ -137,11 +143,11 @@ class RemoveRoundaboutsAlgorithm(QgsProcessingAlgorithm):
             if not feature.geometry().wkbType() == QgsWkbTypes.LineString:
                 geom = feature.geometry()
                 for p in geom.parts():
-                    add_feature(feature, id, QgsGeometry(p.clone()), is_roundabout)
-                    id += 1
+                    add_feature(feature, _id, QgsGeometry(p.clone()), is_roundabout)
+                    _id += 1
             else:
-                add_feature(feature, id, feature.geometry(), is_roundabout)
-                id += 1
+                add_feature(feature, _id, feature.geometry(), is_roundabout)
+                _id += 1
 
             # Update the progress bar
             feedback.setProgress(int(current * total))
@@ -184,7 +190,7 @@ class RemoveRoundaboutsAlgorithm(QgsProcessingAlgorithm):
 
                 # work out if start or end of line touched the roundabout
                 nearest = roundabout_geom.nearestPoint(touching_geom)
-                dist, v = touching_geom.closestVertexWithContext(nearest.asPoint())
+                _, v = touching_geom.closestVertexWithContext(nearest.asPoint())
 
                 if v == 0:
                     # started at roundabout
@@ -232,7 +238,7 @@ class RemoveRoundaboutsAlgorithm(QgsProcessingAlgorithm):
 
                 elif len(parts_to_average) == 2:
                     # <O pattern
-                    src_part, other_part = parts_to_average
+                    src_part, other_part = parts_to_average  # pylint: disable=unbalanced-tuple-unpacking
                     averaged.add(src_part)
                     averaged.add(other_part)
 
@@ -270,32 +276,35 @@ class RemoveRoundaboutsAlgorithm(QgsProcessingAlgorithm):
 
 
 class RemoveCuldesacsAlgorithm(QgsProcessingAlgorithm):
+    """
+    Removes cul-de-sacs
+    """
     INPUT = 'INPUT'
     THRESHOLD = 'THRESHOLD'
     OUTPUT = 'OUTPUT'
 
-    def tr(self, string):
+    def tr(self, string):  # pylint: disable=missing-function-docstring
         return QCoreApplication.translate('Processing', string)
 
-    def createInstance(self):
+    def createInstance(self):  # pylint: disable=missing-function-docstring
         return RemoveCuldesacsAlgorithm()
 
-    def name(self):
+    def name(self):  # pylint: disable=missing-function-docstring
         return 'removeculdesacs'
 
-    def displayName(self):
+    def displayName(self):  # pylint: disable=missing-function-docstring
         return self.tr('Remove cul-de-sacs')
 
-    def group(self):
+    def group(self):  # pylint: disable=missing-function-docstring
         return self.tr('Road networks')
 
-    def groupId(self):
+    def groupId(self):  # pylint: disable=missing-function-docstring
         return 'road'
 
-    def shortHelpString(self):
+    def shortHelpString(self):  # pylint: disable=missing-function-docstring
         return self.tr("Generalizes a road network by removing cul-de-sacs")
 
-    def initAlgorithm(self, config=None):
+    def initAlgorithm(self, config=None):  # pylint: disable=missing-function-docstring,unused-argument
         self.addParameter(
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
@@ -318,7 +327,10 @@ class RemoveCuldesacsAlgorithm(QgsProcessingAlgorithm):
             )
         )
 
-    def processAlgorithm(self, parameters, context, feedback):
+    def processAlgorithm(self,  # pylint: disable=missing-function-docstring,too-many-statements,too-many-branches,too-many-locals
+                         parameters,
+                         context,
+                         feedback):
         source = self.parameterAsSource(
             parameters,
             self.INPUT,
@@ -359,7 +371,7 @@ class RemoveCuldesacsAlgorithm(QgsProcessingAlgorithm):
         total = 90.0 / len(roads)
         removed = 0
         current = 0
-        for id, f in roads.items():
+        for _id, f in roads.items():
             if feedback.isCanceled():
                 break
 
@@ -390,7 +402,7 @@ class RemoveCuldesacsAlgorithm(QgsProcessingAlgorithm):
             touching_start = False
             touching_end = False
             for t in touching_candidates:
-                if t == id:
+                if t == _id:
                     continue
 
                 if start_engine.intersects(roads[t].geometry().constGet()):
@@ -406,8 +418,8 @@ class RemoveCuldesacsAlgorithm(QgsProcessingAlgorithm):
                 # keep it, it joins two roads
                 sink.addFeature(f, QgsFeatureSink.FastInsert)
                 continue
-            else:
-                removed += 1
+
+            removed += 1
 
         feedback.pushInfo(self.tr('Removed {} cul-de-sacs'.format(removed)))
 
@@ -415,33 +427,36 @@ class RemoveCuldesacsAlgorithm(QgsProcessingAlgorithm):
 
 
 class RemoveCrossRoadsAlgorithm(QgsProcessingAlgorithm):
+    """
+    Removes crossing roads
+    """
     INPUT = 'INPUT'
     FIELDS = 'FIELDS'
     THRESHOLD = 'THRESHOLD'
     OUTPUT = 'OUTPUT'
 
-    def tr(self, string):
+    def tr(self, string):  # pylint: disable=missing-function-docstring
         return QCoreApplication.translate('Processing', string)
 
-    def createInstance(self):
+    def createInstance(self):  # pylint: disable=missing-function-docstring
         return RemoveCrossRoadsAlgorithm()
 
-    def name(self):
+    def name(self):  # pylint: disable=missing-function-docstring
         return 'removecrossroads'
 
-    def displayName(self):
+    def displayName(self):  # pylint: disable=missing-function-docstring
         return self.tr('Remove cross roads')
 
-    def group(self):
+    def group(self):  # pylint: disable=missing-function-docstring
         return self.tr('Road networks')
 
-    def groupId(self):
+    def groupId(self):  # pylint: disable=missing-function-docstring
         return 'road'
 
-    def shortHelpString(self):
+    def shortHelpString(self):  # pylint: disable=missing-function-docstring
         return self.tr("Generalizes a road network by removing cross roads")
 
-    def initAlgorithm(self, config=None):
+    def initAlgorithm(self, config=None):  # pylint: disable=missing-function-docstring,unused-argument
         self.addParameter(
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
@@ -472,7 +487,10 @@ class RemoveCrossRoadsAlgorithm(QgsProcessingAlgorithm):
             )
         )
 
-    def processAlgorithm(self, parameters, context, feedback):
+    def processAlgorithm(self,  # pylint: disable=missing-function-docstring,too-many-statements,too-many-branches,too-many-locals
+                         parameters,
+                         context,
+                         feedback):
         source = self.parameterAsSource(
             parameters,
             self.INPUT,
@@ -514,7 +532,7 @@ class RemoveCrossRoadsAlgorithm(QgsProcessingAlgorithm):
         total = 90.0 / len(roads)
         current = 0
         removed = 0
-        for id, f in roads.items():
+        for _id, f in roads.items():
             if feedback.isCanceled():
                 break
 
@@ -545,7 +563,7 @@ class RemoveCrossRoadsAlgorithm(QgsProcessingAlgorithm):
             touching_start_count = 0
             touching_end_count = 0
             for t in touching_candidates:
-                if t == id:
+                if t == _id:
                     continue
 
                 other = roads[t]
@@ -579,33 +597,36 @@ class RemoveCrossRoadsAlgorithm(QgsProcessingAlgorithm):
 
 
 class CollapseDualCarriagewayAlgorithm(QgsProcessingAlgorithm):
+    """
+    Collapses dual carriageway features to a single feature
+    """
     INPUT = 'INPUT'
     FIELDS = 'FIELDS'
     THRESHOLD = 'THRESHOLD'
     OUTPUT = 'OUTPUT'
 
-    def tr(self, string):
+    def tr(self, string):  # pylint: disable=missing-function-docstring
         return QCoreApplication.translate('Processing', string)
 
-    def createInstance(self):
+    def createInstance(self):  # pylint: disable=missing-function-docstring
         return CollapseDualCarriagewayAlgorithm()
 
-    def name(self):
+    def name(self):  # pylint: disable=missing-function-docstring
         return 'collapsedualcarriageway'
 
-    def displayName(self):
+    def displayName(self):  # pylint: disable=missing-function-docstring
         return self.tr('Collapse dual carriageways')
 
-    def group(self):
+    def group(self):  # pylint: disable=missing-function-docstring
         return self.tr('Road networks')
 
-    def groupId(self):
+    def groupId(self):  # pylint: disable=missing-function-docstring
         return 'road'
 
-    def shortHelpString(self):
+    def shortHelpString(self):  # pylint: disable=missing-function-docstring
         return self.tr("Generalizes a road network by collapsing dual carriageways")
 
-    def initAlgorithm(self, config=None):
+    def initAlgorithm(self, config=None):  # pylint: disable=missing-function-docstring,unused-argument
         self.addParameter(
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
@@ -636,7 +657,10 @@ class CollapseDualCarriagewayAlgorithm(QgsProcessingAlgorithm):
             )
         )
 
-    def processAlgorithm(self, parameters, context, feedback):
+    def processAlgorithm(self,  # pylint: disable=missing-function-docstring,too-many-statements,too-many-branches,too-many-locals
+                         parameters,
+                         context,
+                         feedback):
         source = self.parameterAsSource(
             parameters,
             self.INPUT,
@@ -686,14 +710,14 @@ class CollapseDualCarriagewayAlgorithm(QgsProcessingAlgorithm):
 
         total = 85.0 / len(roads)
         current = 0
-        for id, f in roads.items():
+        for _id, f in roads.items():
             if feedback.isCanceled():
                 break
 
             current += 1
             feedback.setProgress(10 + current * total)
 
-            if id in processed:
+            if _id in processed:
                 continue
 
             box = f.geometry().boundingBox()
@@ -701,8 +725,8 @@ class CollapseDualCarriagewayAlgorithm(QgsProcessingAlgorithm):
 
             similar_candidates = index.intersects(box)
             if not similar_candidates:
-                collapsed[id] = f
-                processed.add(id)
+                collapsed[_id] = f
+                processed.add(_id)
                 continue
 
             candidate = f.geometry()
@@ -711,7 +735,7 @@ class CollapseDualCarriagewayAlgorithm(QgsProcessingAlgorithm):
             parts = []
 
             for t in similar_candidates:
-                if t == id:
+                if t == _id:
                     continue
 
                 other = roads[t]
@@ -724,7 +748,7 @@ class CollapseDualCarriagewayAlgorithm(QgsProcessingAlgorithm):
                     parts.append(t)
 
             if len(parts) == 0:
-                collapsed[id] = f
+                collapsed[_id] = f
                 continue
 
             # todo fix this
@@ -741,7 +765,7 @@ class CollapseDualCarriagewayAlgorithm(QgsProcessingAlgorithm):
             touching_candidates = index.intersects(bbox)
 
             for touching_candidate in touching_candidates:
-                if touching_candidate == id or touching_candidate == parts[0]:
+                if touching_candidate in (_id, parts[0]):
                     continue
 
                 # print(touching_candidate)
@@ -754,7 +778,7 @@ class CollapseDualCarriagewayAlgorithm(QgsProcessingAlgorithm):
                 moved_start = False
                 moved_end = False
                 for cc in [candidate, other]:
-                  #  if start.touches(cc):
+                    #  if start.touches(cc):
                     start_line = start.shortestLine(cc)
                     if start_line.length() < 0.00000001:
                         # start touches, move to touch averaged line
@@ -773,7 +797,7 @@ class CollapseDualCarriagewayAlgorithm(QgsProcessingAlgorithm):
                             QgsVertexId(0, 0, touching_candidate_geom.constGet().numPoints() - 1), new_end)
                         # print('moved end')
                         moved_end = True
-                        #break
+                        # break
 
                 index.deleteFeature(roads[touching_candidate])
                 if moved_start and moved_end:
@@ -797,10 +821,10 @@ class CollapseDualCarriagewayAlgorithm(QgsProcessingAlgorithm):
             ff = QgsFeature(f)
             ff.setGeometry(averaged)
             index.addFeature(ff)
-            roads[id] = ff
+            roads[_id] = ff
 
-            collapsed[id] = ff
-            processed.add(id)
+            collapsed[_id] = ff
+            processed.add(_id)
             processed.add(parts[0])
 
         total = 5.0 / len(processed)
@@ -817,39 +841,43 @@ class CollapseDualCarriagewayAlgorithm(QgsProcessingAlgorithm):
 
 
 class AverageLinesAlgorithm(QgsProcessingAlgorithm):
+    """
+    Averages a set of linestring features
+    """
+
     INPUT = 'INPUT'
     OUTPUT = 'OUTPUT'
 
-    def tr(self, string):
+    def tr(self, string):  # pylint: disable=missing-function-docstring
         return QCoreApplication.translate('Processing', string)
 
-    def createInstance(self):
+    def createInstance(self):  # pylint: disable=missing-function-docstring
         return AverageLinesAlgorithm()
 
-    def name(self):
+    def name(self):  # pylint: disable=missing-function-docstring
         return 'averagelines'
 
-    def displayName(self):
+    def displayName(self):  # pylint: disable=missing-function-docstring
         return self.tr('Average linestrings')
 
-    def flags(self):
+    def flags(self):  # pylint: disable=missing-function-docstring
         f = super().flags()
         f |= QgsProcessingAlgorithm.FlagSupportsInPlaceEdits
         return f
 
-    def group(self):
+    def group(self):  # pylint: disable=missing-function-docstring
         return self.tr('General')
 
-    def groupId(self):
+    def groupId(self):  # pylint: disable=missing-function-docstring
         return 'general'
 
-    def shortHelpString(self):
+    def shortHelpString(self):  # pylint: disable=missing-function-docstring
         return self.tr("Creates an average of a set of linestring inputs")
 
-    def supportInPlaceEdit(self, layer):
+    def supportInPlaceEdit(self, layer):  # pylint: disable=missing-function-docstring
         return layer.type() == QgsMapLayer.VectorLayer and layer.geometryType() == QgsWkbTypes.LineGeometry
 
-    def initAlgorithm(self, config=None):
+    def initAlgorithm(self, config=None):  # pylint: disable=unused-argument, missing-function-docstring
         self.addParameter(
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
@@ -865,7 +893,7 @@ class AverageLinesAlgorithm(QgsProcessingAlgorithm):
             )
         )
 
-    def processAlgorithm(self, parameters, context, feedback):
+    def processAlgorithm(self, parameters, context, feedback):  # pylint: disable=missing-function-docstring
         source = self.parameterAsSource(
             parameters,
             self.INPUT,
@@ -896,6 +924,8 @@ class AverageLinesAlgorithm(QgsProcessingAlgorithm):
             if feedback.isCanceled():
                 break
 
+            feedback.setProgress(current * total)
+
             if not feature.geometry().isMultipart():
                 candidate = feature.geometry().constGet().clone()
             else:
@@ -909,7 +939,6 @@ class AverageLinesAlgorithm(QgsProcessingAlgorithm):
             else:
                 weight += 1
                 linestring = GeometryUtils.average_linestrings(linestring, candidate, weight)
-
 
         f.setGeometry(linestring)
         sink.addFeature(f, QgsFeatureSink.FastInsert)
