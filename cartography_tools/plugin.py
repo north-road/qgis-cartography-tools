@@ -46,6 +46,27 @@ class Tool:
 
 from qgis.core import QgsMapLayer, QgsMapLayerType, QgsWkbTypes
 
+from qgis.PyQt import uic
+from qgis.PyQt.QtGui import QFontMetrics
+from qgis.PyQt.QtWidgets import QSizePolicy
+
+WIDGET, BASE = uic.loadUiType(
+    GuiUtils.get_ui_file_path('marker_settings.ui'))
+
+class MarkerSettingsWidget(BASE, WIDGET):
+
+    def __init__(self, parent=None):
+        super(MarkerSettingsWidget, self).__init__(parent)
+        self.setupUi(self)
+
+        self.code_combo.setEditable(True)
+        self.code_combo.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred)
+        self.code_combo.setMinimumWidth(QFontMetrics(self.font()).width('X')*40)
+
+        self.setFocusProxy(self.field_code_combo)
+
+
+
 
 from qgis.gui import QgsMapToolAdvancedDigitizing, QgsMapCanvas,QgsSnapIndicator
 
@@ -59,14 +80,17 @@ class MarkerTool(QgsMapToolAdvancedDigitizing):
     def cadCanvasMoveEvent(self, event):  # pylint: disable=missing-docstring
         self.snap_indicator.setMatch(event.mapPointMatch())
 
+from qgis.PyQt.QtCore import Qt
 
 class SinglePointTemplatedMarkerTool(Tool):
 
     ID = 'SINGLE_POINT_TEMPLATED_MARKER'
 
-    def __init__(self, action):
+    def __init__(self, action, iface):
         super().__init__(SinglePointTemplatedMarkerTool.ID, action)
         self.canvas_tool = None
+        self.widget = None
+        self.iface = iface
 
     def is_compatible_with_layer(self, layer: QgsMapLayer):
         if layer is None:
@@ -77,10 +101,29 @@ class SinglePointTemplatedMarkerTool(Tool):
 
         return layer.geometryType() == QgsWkbTypes.PointGeometry and layer.isEditable()
 
+    def create_widget(self):
+        self.delete_widget()
+
+        self.widget = MarkerSettingsWidget()
+        self.iface.addUserInputWidget(self.widget)
+        self.widget.setFocus(Qt.TabFocusReason)
+
+    def delete_widget(self):
+        if self.widget:
+            self.widget.releaseKeyboard()
+
+            self.widget = None
+
+    def deactivate(self):
+        self.delete_widget()
+
     def activate(self, canvas: QgsMapCanvas, cad_dock_widget):
+        self.create_widget()
         if self.canvas_tool is None:
             self.canvas_tool = MarkerTool(canvas, cad_dock_widget)
             self.canvas_tool.setAction(self.action)
+
+            self.canvas_tool.deactivated.connect(self.deactivate)
 
         canvas.setMapTool(self.canvas_tool)
 
@@ -160,7 +203,7 @@ class CartographyToolsPlugin:
         action_single_point_templated_marker = QAction(GuiUtils.get_icon(
             'plugin.svg'), self.tr('Single Point Templated Marker'))
         action_single_point_templated_marker.setCheckable(True)
-        self.tools[SinglePointTemplatedMarkerTool.ID] = SinglePointTemplatedMarkerTool(action_single_point_templated_marker)
+        self.tools[SinglePointTemplatedMarkerTool.ID] = SinglePointTemplatedMarkerTool(action_single_point_templated_marker, self.iface)
         action_single_point_templated_marker.triggered.connect(partial(
             self.switch_tool, SinglePointTemplatedMarkerTool.ID))
         action_single_point_templated_marker.setData(SinglePointTemplatedMarkerTool.ID)
