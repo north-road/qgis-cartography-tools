@@ -14,7 +14,15 @@ __copyright__ = 'Copyright 2018, North Road'
 __revision__ = '$Format:%H$'
 
 import os
-from qgis.PyQt.QtGui import QIcon
+import math
+
+from qgis.core import Qgis
+
+from qgis.PyQt.QtGui import (
+    QIcon,
+    QFont,
+    QFontMetrics
+)
 
 
 class GuiUtils:
@@ -68,3 +76,13 @@ class GuiUtils:
             return ''
 
         return path
+
+    @staticmethod
+    def scale_icon_size(standard_size: int) -> int:
+        """
+        Scales an icon size accounting for device DPI
+        """
+        fm = QFontMetrics((QFont()))
+        scale = 1.1 * standard_size / 24.0
+        return int(math.floor(max(Qgis.UI_SCALE_FACTOR * fm.height() * scale,
+                                  float(standard_size))))
