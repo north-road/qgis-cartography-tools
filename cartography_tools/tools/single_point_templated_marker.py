@@ -13,9 +13,14 @@ from qgis.core import (
     QgsVectorLayer,
     QgsMapLayer,
     QgsMapLayerType,
-    QgsWkbTypes
+    QgsWkbTypes,
+    QgsFeature,
+    QgsGeometry
 )
-from qgis.gui import QgsMapCanvas
+from qgis.gui import (
+    QgsMapCanvas,
+    QgsMapMouseEvent
+)
 
 from cartography_tools.tools.map_tool import Tool
 from cartography_tools.tools.marker_settings_widget import MarkerSettingsWidget
@@ -28,9 +33,26 @@ class SinglePointTemplatedMarkerTool(Tool):
         super().__init__(SinglePointTemplatedMarkerTool.ID, action, canvas, cad_dock_widget, iface)
         self.widget = None
         self.layer = None
+        self.initial_point = None
 
     def cadCanvasMoveEvent(self, event):  # pylint: disable=missing-docstring
         self.snap_indicator.setMatch(event.mapPointMatch())
+
+    def cadCanvasPressEvent(self, e: QgsMapMouseEvent):
+        point = self.toLayerCoordinates(self.layer, e.snapPoint())
+        if self.initial_point is None:
+            self.initial_point = point
+        else:
+            f=QgsFeature(self.layer.fields())
+
+            f[self.widget.code_field()] = self.widget.code_value()
+            f[self.widget.rotation_field()] = self.initial_point.azimuth(point)
+
+            f.setGeometry(QgsGeometry.fromPointXY(self.initial_point))
+            self.layer.addFeature(f)
+            self.layer.triggerRepaint()
+
+            self.initial_point = None
 
     def is_compatible_with_layer(self, layer: QgsMapLayer):
         if layer is None:

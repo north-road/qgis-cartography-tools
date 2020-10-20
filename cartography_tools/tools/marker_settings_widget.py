@@ -70,3 +70,12 @@ class MarkerSettingsWidget(BASE, WIDGET):
 
         self.field_rotation_combo.layer().setCustomProperty('cartography_tools/last_feature_code',
                                                             self.code_combo.currentText())
+
+    def code_field(self):
+        return self.field_code_combo.currentField()
+
+    def code_value(self):
+        return self.code_combo.currentText()
+
+    def rotation_field(self):
+        return self.field_rotation_combo.currentField()
