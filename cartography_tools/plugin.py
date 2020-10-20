@@ -30,18 +30,18 @@ from cartography_tools.gui.gui_utils import GuiUtils
 
 VERSION = '1.0.0'
 
+from qgis.gui import QgsMapToolAdvancedDigitizing, QgsMapCanvas,QgsSnapIndicator
 
-class Tool:
+class Tool(QgsMapToolAdvancedDigitizing):
 
-    def __init__(self, tool_id, action):
+    def __init__(self, tool_id, action, canvas: QgsMapCanvas, cad_dock_width, iface):
+        super().__init__(canvas, cad_dock_width)
         self._id = tool_id
-        self.action = action
+        self.setAction(action)
+        self.iface = iface
 
     def is_compatible_with_layer(self, layer):
         return True
-
-    def activate(self, canvas, cad_dock_widget):
-        pass
 
 
 from qgis.core import QgsMapLayer, QgsMapLayerType, QgsWkbTypes, QgsFieldProxyModel
@@ -73,17 +73,6 @@ class MarkerSettingsWidget(BASE, WIDGET):
 
 
 
-from qgis.gui import QgsMapToolAdvancedDigitizing, QgsMapCanvas,QgsSnapIndicator
-
-
-class MarkerTool(QgsMapToolAdvancedDigitizing):
-
-    def __init__(self, canvas: QgsMapCanvas, cad_dock_width):
-        super().__init__(canvas, cad_dock_width)
-        self.snap_indicator = QgsSnapIndicator(self.canvas())
-
-    def cadCanvasMoveEvent(self, event):  # pylint: disable=missing-docstring
-        self.snap_indicator.setMatch(event.mapPointMatch())
 
 from qgis.PyQt.QtCore import Qt
 from qgis.core import QgsVectorLayer
@@ -92,11 +81,13 @@ class SinglePointTemplatedMarkerTool(Tool):
 
     ID = 'SINGLE_POINT_TEMPLATED_MARKER'
 
-    def __init__(self, action, iface):
-        super().__init__(SinglePointTemplatedMarkerTool.ID, action)
-        self.canvas_tool = None
+    def __init__(self, canvas: QgsMapCanvas, cad_dock_widget, iface, action):
+        super().__init__(SinglePointTemplatedMarkerTool.ID, action, canvas, cad_dock_widget, iface)
+        self.snap_indicator = QgsSnapIndicator(self.canvas())
         self.widget = None
-        self.iface = iface
+
+    def cadCanvasMoveEvent(self, event):  # pylint: disable=missing-docstring
+        self.snap_indicator.setMatch(event.mapPointMatch())
 
     def is_compatible_with_layer(self, layer: QgsMapLayer):
         if layer is None:
@@ -121,20 +112,16 @@ class SinglePointTemplatedMarkerTool(Tool):
             self.widget = None
 
     def deactivate(self):
+        super().deactivate()
         self.delete_widget()
 
-    def activate(self, canvas: QgsMapCanvas, cad_dock_widget):
+    def activate(self):
+        super().activate()
         self.create_widget()
-        if self.canvas_tool is None:
-            self.canvas_tool = MarkerTool(canvas, cad_dock_widget)
-            self.canvas_tool.setAction(self.action)
-
-            self.canvas_tool.deactivated.connect(self.deactivate)
-
-        canvas.setMapTool(self.canvas_tool)
 
     def set_layer(self, layer: QgsVectorLayer):
-        self.widget.set_layer(layer)
+        if self.widget:
+            self.widget.set_layer(layer)
 
 
 
@@ -213,7 +200,8 @@ class CartographyToolsPlugin:
         action_single_point_templated_marker = QAction(GuiUtils.get_icon(
             'plugin.svg'), self.tr('Single Point Templated Marker'))
         action_single_point_templated_marker.setCheckable(True)
-        self.tools[SinglePointTemplatedMarkerTool.ID] = SinglePointTemplatedMarkerTool(action_single_point_templated_marker, self.iface)
+        self.tools[SinglePointTemplatedMarkerTool.ID] = SinglePointTemplatedMarkerTool(self.iface.mapCanvas(),
+                                                                                       self.iface.cadDockWidget(),self.iface,action_single_point_templated_marker)
         action_single_point_templated_marker.triggered.connect(partial(
             self.switch_tool, SinglePointTemplatedMarkerTool.ID))
         action_single_point_templated_marker.setData(SinglePointTemplatedMarkerTool.ID)
@@ -236,7 +224,7 @@ class CartographyToolsPlugin:
 
     def switch_tool(self, tool_id):
         tool = self.tools[tool_id]
-        tool.activate(self.iface.mapCanvas(), self.iface.cadDockWidget())
+        self.iface.mapCanvas().setMapTool(tool)
         self.active_tool = tool
         self.active_tool.set_layer(self.previous_layer)
 
