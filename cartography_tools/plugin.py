@@ -44,8 +44,7 @@ class Tool:
         pass
 
 
-from qgis.core import QgsMapLayer, QgsMapLayerType, QgsWkbTypes
-
+from qgis.core import QgsMapLayer, QgsMapLayerType, QgsWkbTypes, QgsFieldProxyModel
 from qgis.PyQt import uic
 from qgis.PyQt.QtGui import QFontMetrics
 from qgis.PyQt.QtWidgets import QSizePolicy
@@ -63,7 +62,13 @@ class MarkerSettingsWidget(BASE, WIDGET):
         self.code_combo.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred)
         self.code_combo.setMinimumWidth(QFontMetrics(self.font()).width('X')*40)
 
+        self.field_rotation_combo.setFilters(QgsFieldProxyModel.Numeric)
+
         self.setFocusProxy(self.field_code_combo)
+
+    def set_layer(self, layer):
+        self.field_code_combo.setLayer(layer)
+        self.field_rotation_combo.setLayer(layer)
 
 
 
@@ -81,6 +86,7 @@ class MarkerTool(QgsMapToolAdvancedDigitizing):
         self.snap_indicator.setMatch(event.mapPointMatch())
 
 from qgis.PyQt.QtCore import Qt
+from qgis.core import QgsVectorLayer
 
 class SinglePointTemplatedMarkerTool(Tool):
 
@@ -127,6 +133,9 @@ class SinglePointTemplatedMarkerTool(Tool):
 
         canvas.setMapTool(self.canvas_tool)
 
+    def set_layer(self, layer: QgsVectorLayer):
+        self.widget.set_layer(layer)
+
 
 
 class CartographyToolsPlugin:
@@ -167,6 +176,7 @@ class CartographyToolsPlugin:
         self.previous_layer = None
         self.edit_start_connection = None
         self.edit_stop_connection = None
+        self.active_tool = None
 
     @staticmethod
     def tr(message):
@@ -227,6 +237,8 @@ class CartographyToolsPlugin:
     def switch_tool(self, tool_id):
         tool = self.tools[tool_id]
         tool.activate(self.iface.mapCanvas(), self.iface.cadDockWidget())
+        self.active_tool = tool
+        self.active_tool.set_layer(self.previous_layer)
 
     def current_layer_changed(self, layer):
         if self.edit_start_connection:
@@ -242,6 +254,9 @@ class CartographyToolsPlugin:
 
         self.enable_actions_for_layer(layer)
         self.previous_layer = layer
+
+        if self.active_tool:
+            self.active_tool.set_layer(layer)
 
     def enable_actions_for_layer(self, layer):
         for action in self.actions:
