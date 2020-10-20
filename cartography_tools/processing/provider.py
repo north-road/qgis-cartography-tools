@@ -44,13 +44,13 @@ class CartographyToolsProvider(QgsProcessingProvider):
         """
         Returns the provider's icon
         """
-        return GuiUtils.get_icon("providerR.svg")
+        return GuiUtils.get_icon("plugin.svg")
 
     def svgIconPath(self):
         """
         Returns a path to the provider's icon as a SVG file
         """
-        return GuiUtils.get_icon_svg("providerR.svg")
+        return GuiUtils.get_icon_svg("plugin.svg")
 
     def name(self):
         """
