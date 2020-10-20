@@ -10,7 +10,10 @@ from qgis.PyQt import uic
 from qgis.PyQt.QtGui import QFontMetrics
 from qgis.PyQt.QtWidgets import QSizePolicy
 
-from qgis.core import QgsFieldProxyModel
+from qgis.core import (
+    QgsFieldProxyModel,
+    QgsVectorLayer
+)
 
 from cartography_tools.gui.gui_utils import GuiUtils
 
@@ -32,6 +35,38 @@ class MarkerSettingsWidget(BASE, WIDGET):
 
         self.setFocusProxy(self.field_code_combo)
 
-    def set_layer(self, layer):
+        self.field_code_combo.fieldChanged.connect(self.field_code_changed)
+        self.field_rotation_combo.fieldChanged.connect(self.field_rotation_changed)
+        self.code_combo.currentTextChanged.connect(self.code_changed)
+
+    def set_layer(self, layer: QgsVectorLayer):
         self.field_code_combo.setLayer(layer)
         self.field_rotation_combo.setLayer(layer)
+
+        if layer and layer.customProperty('cartography_tools/feature_code_field'):
+            self.field_code_combo.setField(layer.customProperty('cartography_tools/feature_code_field'))
+        if layer and layer.customProperty('cartography_tools/marker_rotation_field'):
+            self.field_rotation_combo.setField(layer.customProperty('cartography_tools/marker_rotation_field'))
+        if layer and layer.customProperty('cartography_tools/last_feature_code'):
+            self.code_combo.setCurrentText(layer.customProperty('cartography_tools/last_feature_code'))
+
+    def field_code_changed(self):
+        if not self.field_code_combo.layer():
+            return
+
+        self.field_code_combo.layer().setCustomProperty('cartography_tools/feature_code_field',
+                                                        self.field_code_combo.currentField())
+
+    def field_rotation_changed(self):
+        if not self.field_rotation_combo.layer():
+            return
+
+        self.field_rotation_combo.layer().setCustomProperty('cartography_tools/marker_rotation_field',
+                                                            self.field_rotation_combo.currentField())
+
+    def code_changed(self):
+        if not self.field_rotation_combo.layer():
+            return
+
+        self.field_rotation_combo.layer().setCustomProperty('cartography_tools/last_feature_code',
+                                                            self.code_combo.currentText())
