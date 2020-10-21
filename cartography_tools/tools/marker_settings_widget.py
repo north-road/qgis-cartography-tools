@@ -9,11 +9,13 @@ the Free Software Foundation; either version 2 of the License, or
 from qgis.PyQt import uic
 from qgis.PyQt.QtGui import QFontMetrics
 from qgis.PyQt.QtWidgets import QSizePolicy
+from qgis.PyQt.QtCore import QSize
 
 from qgis.core import (
     QgsFieldProxyModel,
     QgsVectorLayer,
     QgsCategorizedSymbolRenderer,
+    QgsSymbolLayerUtils,
     NULL
 )
 
@@ -66,16 +68,26 @@ class MarkerSettingsWidget(BASE, WIDGET):
         if not self.layer:
             return
 
+        icon_size = GuiUtils.scale_icon_size(16)
+
         renderer = self.layer.renderer()
         if isinstance(renderer, QgsCategorizedSymbolRenderer):
             prev_value = self.code_combo.currentText()
             self.code_combo.clear()
 
-            for c in renderer.categories():
-                if c.value() is not None and c.value() != NULL:
-                    self.code_combo.addItem(str(c.value()))
+            prev_index = -1
 
-            self.code_combo.setCurrentText(prev_value)
+            for category in renderer.categories():
+                if category.value() is not None and category.value() != NULL:
+                    if category.value() == prev_value:
+                        prev_index = self.code_combo.count()
+                    icon = QgsSymbolLayerUtils.symbolPreviewIcon(category.symbol(), QSize(icon_size, icon_size))
+                    self.code_combo.addItem(icon, str(category.value()))
+
+            if prev_index >= 0:
+                self.code_combo.setCurrentIndex(prev_index)
+            else:
+                self.code_combo.setCurrentText(prev_value)
 
     def field_code_changed(self):
         if not self.field_code_combo.layer():

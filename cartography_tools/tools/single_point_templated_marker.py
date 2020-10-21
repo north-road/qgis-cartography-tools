@@ -97,6 +97,7 @@ class SinglePointTemplatedMarkerTool(Tool):
         if self.initial_point is None and e.button() == Qt.LeftButton:
             self.initial_point = point
             self.create_rotation_item(point)
+            self.layer.triggerRepaint()
         else:
             if e.button() == Qt.LeftButton:
                 f = self.create_feature(point=self.initial_point, rotation=self.initial_point.azimuth(point))

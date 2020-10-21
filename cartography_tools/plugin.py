@@ -16,6 +16,7 @@ __revision__ = '$Format:%H$'
 import os
 from functools import partial
 
+from qgis.PyQt import sip
 from qgis.PyQt.QtCore import (QTranslator,
                               QCoreApplication)
 from qgis.PyQt.QtWidgets import (
@@ -139,6 +140,12 @@ class CartographyToolsPlugin:
                 action.deleteLater()
 
         self.iface.currentLayerChanged.disconnect(self.current_layer_changed)
+        if self.edit_start_connection:
+            self.previous_layer.disconnect(self.edit_start_connection)
+            self.edit_start_connection = None
+        if self.edit_stop_connection:
+            self.previous_layer.disconnect(self.edit_stop_connection)
+            self.edit_stop_connection = None
 
     def switch_tool(self, tool_id: str):
         """
@@ -175,6 +182,9 @@ class CartographyToolsPlugin:
         Toggles whether actions should be enabled for the specified layer
         """
         for action in self.actions:
+            if sip.isdeleted(action):
+                continue
+
             if self.tools.get(action.data()):
                 tool = self.tools[action.data()]
                 action.setEnabled(tool.is_compatible_with_layer(layer))
