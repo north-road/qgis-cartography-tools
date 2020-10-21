@@ -161,10 +161,18 @@ class CartographyToolsPlugin:
         Called when the current layer changes
         """
         if self.edit_start_connection:
-            self.previous_layer.disconnect(self.edit_start_connection)
+            try:
+                self.previous_layer.disconnect(self.edit_start_connection)
+            except TypeError:
+                # older Qt version - argh, we can't disconnect!
+                pass
             self.edit_start_connection = None
         if self.edit_stop_connection:
-            self.previous_layer.disconnect(self.edit_stop_connection)
+            try:
+                self.previous_layer.disconnect(self.edit_stop_connection)
+            except TypeError:
+                # older Qt version - argh, we can't disconnect!
+                pass
             self.edit_stop_connection = None
 
         if layer is not None and layer.type() == QgsMapLayerType.VectorLayer:
@@ -181,6 +189,10 @@ class CartographyToolsPlugin:
         """
         Toggles whether actions should be enabled for the specified layer
         """
+        if layer != self.iface.activeLayer():
+            # an older connection -- likely a result of running on an older Qt build
+            return
+
         for action in self.actions:
             if sip.isdeleted(action):
                 continue

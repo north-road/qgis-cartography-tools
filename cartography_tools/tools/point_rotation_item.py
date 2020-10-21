@@ -131,7 +131,7 @@ class PointRotationItem(QgsMapCanvasItem):
             self.item_size.setHeight(fm.height())
 
         half_item_width = self.pixmap.width() / 2.0
-        self.arrow_path.clear()
+        self.arrow_path = QPainterPath()
         self.arrow_path.moveTo(half_item_width, pixmap_height)
         self.arrow_path.lineTo(half_item_width, 0)
         self.arrow_path.moveTo(self.pixmap.width() * 0.25, pixmap_height * 0.25)
