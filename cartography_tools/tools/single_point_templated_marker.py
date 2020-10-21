@@ -106,6 +106,12 @@ class SinglePointTemplatedMarkerTool(Tool):
             self.initial_point = None
             self.remove_rotation_item()
 
+    def keyPressEvent(self, e):
+        if self.initial_point and e.key() == Qt.Key_Escape and not e.isAutoRepeat():
+            self.remove_rotation_item()
+            self.layer.triggerRepaint()
+            self.initial_point = None
+
     def is_compatible_with_layer(self, layer: QgsMapLayer):
         if layer is None:
             return False
