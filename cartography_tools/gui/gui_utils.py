@@ -15,13 +15,26 @@ __revision__ = '$Format:%H$'
 
 import os
 import math
+from typing import Optional
 
-from qgis.core import Qgis
+from qgis.core import (
+    Qgis,
+    QgsExpressionContext,
+    QgsRenderContext,
+    QgsSymbol
+)
+
+from qgis.PyQt.QtCore import (
+    QSize,
+    QPointF
+)
 
 from qgis.PyQt.QtGui import (
     QIcon,
     QFont,
-    QFontMetrics
+    QFontMetrics,
+    QImage,
+    QPainter
 )
 
 
@@ -86,3 +99,36 @@ class GuiUtils:
         scale = 1.1 * standard_size / 24.0
         return int(math.floor(max(Qgis.UI_SCALE_FACTOR * fm.height() * scale,
                                   float(standard_size))))
+
+    @staticmethod
+    def big_marker_preview_image(symbol: QgsSymbol,
+                                 expression_context: Optional[QgsExpressionContext] = None) -> QImage:
+        """
+        Generate a big symbol preview image for a marker
+        """
+        preview = QImage(QSize(100, 100), QImage.Format_ARGB32_Premultiplied)
+        preview.fill(0)
+
+        p = QPainter(preview)
+        p.setRenderHint(QPainter.Antialiasing)
+        p.translate(0.5, 0.5)
+
+        context = QgsRenderContext.fromQPainter(p)
+        try:
+            context.setFlag(QgsRenderContext.RenderSymbolPreview)
+        except AttributeError:
+            pass
+
+        if expression_context:
+            context.setExpressionContext(expression_context)
+
+        try:
+            context.setIsGuiPreview(True)
+        except AttributeError:
+            pass
+
+        symbol.startRender(context)
+        symbol.renderPoint(QPointF(50, 50), None, context)
+        symbol.stopRender(context)
+
+        return preview

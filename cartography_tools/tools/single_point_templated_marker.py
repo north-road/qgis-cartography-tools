@@ -15,7 +15,11 @@ from qgis.core import (
     QgsMapLayerType,
     QgsWkbTypes,
     QgsFeature,
-    QgsGeometry
+    QgsGeometry,
+    QgsPointXY,
+    QgsRenderContext,
+    QgsExpressionContextUtils,
+    QgsProperty
 )
 from qgis.gui import (
     QgsMapCanvas,
@@ -24,6 +28,8 @@ from qgis.gui import (
 
 from cartography_tools.tools.map_tool import Tool
 from cartography_tools.tools.marker_settings_widget import MarkerSettingsWidget
+from cartography_tools.tools.point_rotation_item import PointRotationItem
+from cartography_tools.gui.gui_utils import GuiUtils
 
 
 class SinglePointTemplatedMarkerTool(Tool):
@@ -34,25 +40,71 @@ class SinglePointTemplatedMarkerTool(Tool):
         self.widget = None
         self.layer = None
         self.initial_point = None
+        self.rotation_item = None
+
+    def create_feature(self, point: QgsPointXY, rotation: float) -> QgsFeature:
+        f = QgsFeature(self.layer.fields())
+
+        f[self.widget.code_field()] = self.widget.code_value()
+        f[self.widget.rotation_field()] = rotation
+
+        f.setGeometry(QgsGeometry.fromPointXY(point))
+
+        return f
 
     def cadCanvasMoveEvent(self, event):  # pylint: disable=missing-docstring
         self.snap_indicator.setMatch(event.mapPointMatch())
 
+        if self.initial_point is not None and self.rotation_item:
+            # update preview rotation
+            point = self.toLayerCoordinates(self.layer, event.snapPoint())
+            self.rotation_item.set_symbol_rotation(self.initial_point.azimuth(point))
+            self.rotation_item.update()
+
+    def create_rotation_item(self, map_point: QgsPointXY):
+        f = self.create_feature(point=self.initial_point, rotation=0)
+
+        # find symbol for feature
+        renderer = self.layer.renderer().clone()
+        context = QgsRenderContext.fromMapSettings(self.canvas().mapSettings())
+        context.expressionContext().appendScope(QgsExpressionContextUtils.layerScope(self.layer))
+        context.expressionContext().setFeature(f)
+
+        renderer.startRender(context, self.layer.fields())
+        symbol = renderer.originalSymbolForFeature(f, context)
+        renderer.stopRender(context)
+
+        # clear existing data defined rotation
+        symbol.setDataDefinedAngle(QgsProperty())
+
+        # render symbol to image
+        symbol_image = GuiUtils.big_marker_preview_image(symbol, context.expressionContext())
+
+        self.rotation_item = PointRotationItem(self.canvas())
+        self.rotation_item.set_symbol(symbol_image)
+        self.rotation_item.set_point_location(map_point)
+        self.rotation_item.set_symbol_rotation(0)
+        self.rotation_item.update()
+
+    def remove_rotation_item(self):
+        if self.rotation_item:
+            self.canvas().scene().removeItem(self.rotation_item)
+            del self.rotation_item
+            self.rotation_item = None
+
     def cadCanvasPressEvent(self, e: QgsMapMouseEvent):
         point = self.toLayerCoordinates(self.layer, e.snapPoint())
-        if self.initial_point is None:
+        if self.initial_point is None and e.button() == Qt.LeftButton:
             self.initial_point = point
+            self.create_rotation_item(point)
         else:
-            f=QgsFeature(self.layer.fields())
+            if e.button() == Qt.LeftButton:
+                f = self.create_feature(point=self.initial_point, rotation=self.initial_point.azimuth(point))
+                self.layer.addFeature(f)
 
-            f[self.widget.code_field()] = self.widget.code_value()
-            f[self.widget.rotation_field()] = self.initial_point.azimuth(point)
-
-            f.setGeometry(QgsGeometry.fromPointXY(self.initial_point))
-            self.layer.addFeature(f)
             self.layer.triggerRepaint()
-
             self.initial_point = None
+            self.remove_rotation_item()
 
     def is_compatible_with_layer(self, layer: QgsMapLayer):
         if layer is None:
@@ -80,6 +132,7 @@ class SinglePointTemplatedMarkerTool(Tool):
     def deactivate(self):
         super().deactivate()
         self.delete_widget()
+        self.remove_rotation_item()
 
     def activate(self):
         super().activate()

@@ -23,7 +23,8 @@ from qgis.PyQt.QtGui import (
     QPainter,
     QPen,
     QPainterPath,
-    QBrush
+    QBrush,
+    QFont
 )
 
 from cartography_tools.gui.gui_utils import GuiUtils
@@ -41,7 +42,7 @@ class PointRotationItem(QgsMapCanvasItem):
         self.pixmap = QPixmap()
         self.item_size = QSizeF()
 
-        self.marker_font = self.font()
+        self.marker_font = QFont()
         self.marker_font.setPointSize(12)
         self.marker_font.setBold(True)
 
@@ -49,9 +50,9 @@ class PointRotationItem(QgsMapCanvasItem):
 
         im = QImage(24, 24, QImage.Format_ARGB32)
         im.fill(Qt.transparent)
-        self.setSymbol(im)
+        self.set_symbol(im)
 
-    def paint(self, painter):
+    def paint(self, painter, option, widget):
         if not painter:
             return
 
@@ -89,13 +90,15 @@ class PointRotationItem(QgsMapCanvasItem):
 
         # draw numeric value beside the symbol
         painter.save()
+        painter.setRenderHint(QPainter.Antialiasing, True)
+
         buffer_pen = QPen()
         buffer_pen.setColor(Qt.white)
         buffer_pen.setWidthF(GuiUtils.scale_icon_size(4))
         fm = QFontMetricsF(self.marker_font)
         label = QPainterPath()
         label.addText(self.pixmap.width(), self.pixmap.height() / 2.0 + fm.height() / 2.0, self.marker_font,
-                      str(self.rotation))
+                      str(round(self.rotation, 1)))
         painter.setPen(buffer_pen)
         painter.setBrush(Qt.NoBrush)
         painter.drawPath(label)
