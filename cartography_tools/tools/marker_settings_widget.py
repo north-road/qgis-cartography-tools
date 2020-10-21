@@ -55,6 +55,9 @@ class MarkerSettingsWidget(BASE, WIDGET):
 
         if layer and layer.customProperty('cartography_tools/feature_code_field'):
             self.field_code_combo.setField(layer.customProperty('cartography_tools/feature_code_field'))
+        elif layer and isinstance(layer.renderer(), QgsCategorizedSymbolRenderer):
+            # otherwise default to categorized field, if possible...
+            self.field_code_combo.setField(layer.renderer().classAttribute())
         if layer and layer.customProperty('cartography_tools/marker_rotation_field'):
             self.field_rotation_combo.setField(layer.customProperty('cartography_tools/marker_rotation_field'))
         if layer and layer.customProperty('cartography_tools/last_feature_code'):
