@@ -176,4 +176,7 @@ class CartographyToolsPlugin:
         """
         for action in self.actions:
             if self.tools.get(action.data()):
-                action.setEnabled(self.tools[action.data()].is_compatible_with_layer(layer))
+                tool = self.tools[action.data()]
+                action.setEnabled(tool.is_compatible_with_layer(layer))
+                if tool == self.active_tool and not action.isEnabled():
+                    tool.deactivate()

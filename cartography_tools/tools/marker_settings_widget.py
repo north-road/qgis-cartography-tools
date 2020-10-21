@@ -12,7 +12,9 @@ from qgis.PyQt.QtWidgets import QSizePolicy
 
 from qgis.core import (
     QgsFieldProxyModel,
-    QgsVectorLayer
+    QgsVectorLayer,
+    QgsCategorizedSymbolRenderer,
+    NULL
 )
 
 from cartography_tools.gui.gui_utils import GuiUtils
@@ -39,7 +41,13 @@ class MarkerSettingsWidget(BASE, WIDGET):
         self.field_rotation_combo.fieldChanged.connect(self.field_rotation_changed)
         self.code_combo.currentTextChanged.connect(self.code_changed)
 
+        self.layer = None
+
     def set_layer(self, layer: QgsVectorLayer):
+        if self.layer:
+            self.layer.rendererChanged.disconnect(self.update_for_renderer)
+
+        self.layer = layer
         self.field_code_combo.setLayer(layer)
         self.field_rotation_combo.setLayer(layer)
 
@@ -49,6 +57,25 @@ class MarkerSettingsWidget(BASE, WIDGET):
             self.field_rotation_combo.setField(layer.customProperty('cartography_tools/marker_rotation_field'))
         if layer and layer.customProperty('cartography_tools/last_feature_code'):
             self.code_combo.setCurrentText(layer.customProperty('cartography_tools/last_feature_code'))
+
+        self.update_for_renderer()
+        if self.layer:
+            layer.rendererChanged.connect(self.update_for_renderer)
+
+    def update_for_renderer(self):
+        if not self.layer:
+            return
+
+        renderer = self.layer.renderer()
+        if isinstance(renderer, QgsCategorizedSymbolRenderer):
+            prev_value = self.code_combo.currentText()
+            self.code_combo.clear()
+
+            for c in renderer.categories():
+                if c.value() is not None and c.value() != NULL:
+                    self.code_combo.addItem(str(c.value()))
+
+            self.code_combo.setCurrentText(prev_value)
 
     def field_code_changed(self):
         if not self.field_code_combo.layer():
