@@ -115,7 +115,7 @@ class CartographyToolsPlugin:
         Creates all map tools ands add them to the QGIS interface
         """
         action_single_point_templated_marker = QAction(GuiUtils.get_icon(
-            'plugin.svg'), self.tr('Single Point Templated Marker'))
+            'single_point_templated_marker.svg'), self.tr('Single Point Templated Marker'))
         action_single_point_templated_marker.setCheckable(True)
         self.tools[SinglePointTemplatedMarkerTool.ID] = SinglePointTemplatedMarkerTool(self.iface.mapCanvas(),
                                                                                        self.iface.cadDockWidget(),
