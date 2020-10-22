@@ -20,7 +20,8 @@ from qgis.core import (
     QgsRenderContext,
     QgsExpressionContextUtils,
     QgsProperty,
-    QgsApplication
+    QgsApplication,
+    NULL
 )
 from qgis.gui import (
     QgsMapCanvas,
@@ -49,8 +50,11 @@ class SinglePointTemplatedMarkerTool(Tool):
     def create_feature(self, point: QgsPointXY, rotation: float) -> QgsFeature:
         f = QgsFeature(self.layer.fields())
 
-        f[self.widget.code_field()] = self.widget.code_value()
-        f[self.widget.rotation_field()] = rotation
+        if self.widget.code_field():
+            f[self.widget.code_field()] = self.widget.code_value()
+
+        if self.widget.rotation_field():
+            f[self.widget.rotation_field()] = rotation
 
         f.setGeometry(QgsGeometry.fromPointXY(point))
 
@@ -99,9 +103,16 @@ class SinglePointTemplatedMarkerTool(Tool):
     def cadCanvasPressEvent(self, e: QgsMapMouseEvent):
         point = self.toLayerCoordinates(self.layer, e.snapPoint())
         if self.initial_point is None and e.button() == Qt.LeftButton:
-            self.initial_point = point
-            self.create_rotation_item(point)
-            self.layer.triggerRepaint()
+            # depending on whether a rotation field is selected, we either start the interactive rotation or
+            # immediately create the feature
+            if self.widget.rotation_field():
+                self.initial_point = point
+                self.create_rotation_item(point)
+                self.layer.triggerRepaint()
+            else:
+                f = self.create_feature(point=point, rotation=NULL)
+                self.layer.addFeature(f)
+                self.layer.triggerRepaint()
         else:
             if e.button() == Qt.LeftButton:
                 f = self.create_feature(point=self.initial_point, rotation=self.initial_point.azimuth(point))

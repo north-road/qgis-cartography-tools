@@ -35,7 +35,10 @@ class MarkerSettingsWidget(BASE, WIDGET):
         self.code_combo.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred)
         self.code_combo.setMinimumWidth(QFontMetrics(self.font()).width('X') * 40)
 
+        self.field_code_combo.setAllowEmptyFieldName(True)
+
         self.field_rotation_combo.setFilters(QgsFieldProxyModel.Numeric)
+        self.field_rotation_combo.setAllowEmptyFieldName(True)
 
         self.setFocusProxy(self.field_code_combo)
 
@@ -98,6 +101,8 @@ class MarkerSettingsWidget(BASE, WIDGET):
 
         self.field_code_combo.layer().setCustomProperty('cartography_tools/feature_code_field',
                                                         self.field_code_combo.currentField())
+
+        self.code_combo.setEnabled(bool(self.field_code_combo.currentField()))
 
     def field_rotation_changed(self):
         if not self.field_rotation_combo.layer():
