@@ -21,7 +21,8 @@ from qgis.core import (
     QgsExpressionContextUtils,
     QgsProperty,
     QgsApplication,
-    NULL
+    NULL,
+    QgsSymbol
 )
 from qgis.gui import (
     QgsMapCanvas,
@@ -80,6 +81,13 @@ class SinglePointTemplatedMarkerTool(Tool):
 
         renderer.startRender(context, self.layer.fields())
         symbol = renderer.originalSymbolForFeature(f, context)
+        if symbol is None:
+            # e.g. code which doesn't match existing category
+            if len(renderer.symbols(context)):
+                symbol = renderer.symbols(context)[0]
+            else:
+                symbol = QgsSymbol.defaultSymbol(self.layer.geometryType())
+
         renderer.stopRender(context)
 
         # clear existing data defined rotation
