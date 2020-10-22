@@ -112,7 +112,10 @@ class CartographyToolsPlugin:
         self.iface.currentLayerChanged.connect(self.current_layer_changed)
 
     def get_map_tool_action_group(self):
-        return [o for o in self.iface.mainWindow().findChildren(QActionGroup) if self.iface.actionPan() in o.actions()][0]
+        try:
+            return self.iface.mapToolActionGroup()
+        except AttributeError:
+            return [o for o in self.iface.mainWindow().findChildren(QActionGroup) if self.iface.actionPan() in o.actions()][0]
 
     def create_tools(self):
         """
