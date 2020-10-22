@@ -18,7 +18,8 @@ from functools import partial
 
 from qgis.PyQt import sip
 from qgis.PyQt.QtCore import (QTranslator,
-                              QCoreApplication)
+                              QCoreApplication,
+                              QTimer)
 from qgis.PyQt.QtWidgets import (
     QToolBar,
     QAction,
@@ -75,8 +76,6 @@ class CartographyToolsPlugin:
         self.tools = {}
 
         self.previous_layer = None
-        self.edit_start_connection = None
-        self.edit_stop_connection = None
         self.active_tool = None
 
     @staticmethod
@@ -110,6 +109,7 @@ class CartographyToolsPlugin:
 
         self.previous_layer = self.iface.activeLayer()
         self.iface.currentLayerChanged.connect(self.current_layer_changed)
+        self.iface.actionToggleEditing().toggled.connect(self.editing_toggled)
 
     def get_map_tool_action_group(self):
         try:
@@ -150,12 +150,6 @@ class CartographyToolsPlugin:
                 action.deleteLater()
 
         self.iface.currentLayerChanged.disconnect(self.current_layer_changed)
-        if self.edit_start_connection:
-            self.previous_layer.disconnect(self.edit_start_connection)
-            self.edit_start_connection = None
-        if self.edit_stop_connection:
-            self.previous_layer.disconnect(self.edit_stop_connection)
-            self.edit_stop_connection = None
 
     def switch_tool(self, tool_id: str):
         """
@@ -173,39 +167,22 @@ class CartographyToolsPlugin:
         """
         Called when the current layer changes
         """
-        if self.edit_start_connection:
-            try:
-                self.previous_layer.disconnect(self.edit_start_connection)
-            except TypeError:
-                # older Qt version - argh, we can't disconnect!
-                pass
-            self.edit_start_connection = None
-        if self.edit_stop_connection:
-            try:
-                self.previous_layer.disconnect(self.edit_stop_connection)
-            except TypeError:
-                # older Qt version - argh, we can't disconnect!
-                pass
-            self.edit_stop_connection = None
-
-        if layer is not None and layer.type() == QgsMapLayerType.VectorLayer:
-            self.edit_start_connection = layer.editingStarted.connect(partial(self.enable_actions_for_layer, layer))
-            self.edit_stop_connection = layer.editingStopped.connect(partial(self.enable_actions_for_layer, layer))
-
         self.enable_actions_for_layer(layer)
         self.previous_layer = layer
 
         if self.active_tool:
             self.active_tool.set_layer(layer)
 
+    def editing_toggled(self, enabled: bool):
+        """
+        Called when editing mode is toggled
+        """
+        QTimer.singleShot(0, partial(self.enable_actions_for_layer, self.iface.activeLayer()))
+
     def enable_actions_for_layer(self, layer: QgsMapLayer):
         """
         Toggles whether actions should be enabled for the specified layer
         """
-        if layer != self.iface.activeLayer():
-            # an older connection -- likely a result of running on an older Qt build
-            return
-
         for action in self.actions:
             if sip.isdeleted(action):
                 continue
