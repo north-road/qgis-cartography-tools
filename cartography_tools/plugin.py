@@ -21,7 +21,8 @@ from qgis.PyQt.QtCore import (QTranslator,
                               QCoreApplication)
 from qgis.PyQt.QtWidgets import (
     QToolBar,
-    QAction
+    QAction,
+    QActionGroup
 )
 
 from qgis.core import (
@@ -110,6 +111,9 @@ class CartographyToolsPlugin:
         self.previous_layer = self.iface.activeLayer()
         self.iface.currentLayerChanged.connect(self.current_layer_changed)
 
+    def get_map_tool_action_group(self):
+        return [o for o in self.iface.mainWindow().findChildren(QActionGroup) if self.iface.actionPan() in o.actions()][0]
+
     def create_tools(self):
         """
         Creates all map tools ands add them to the QGIS interface
@@ -121,11 +125,14 @@ class CartographyToolsPlugin:
                                                                                        self.iface.cadDockWidget(),
                                                                                        self.iface,
                                                                                        action_single_point_templated_marker)
+        self.tools[SinglePointTemplatedMarkerTool.ID].setAction(action_single_point_templated_marker)
         action_single_point_templated_marker.triggered.connect(partial(
             self.switch_tool, SinglePointTemplatedMarkerTool.ID))
         action_single_point_templated_marker.setData(SinglePointTemplatedMarkerTool.ID)
         self.toolbar.addAction(action_single_point_templated_marker)
         self.actions.append(action_single_point_templated_marker)
+
+        self.get_map_tool_action_group().addAction(action_single_point_templated_marker)
 
         self.enable_actions_for_layer(self.iface.activeLayer())
 
@@ -152,6 +159,9 @@ class CartographyToolsPlugin:
         Switches to the tool with the specified tool_id
         """
         tool = self.tools[tool_id]
+        if self.iface.mapCanvas().mapTool() == tool:
+            return
+
         self.iface.mapCanvas().setMapTool(tool)
         self.active_tool = tool
         self.active_tool.set_layer(self.previous_layer)
