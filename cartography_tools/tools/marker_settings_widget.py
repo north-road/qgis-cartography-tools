@@ -106,7 +106,10 @@ class MarkerSettingsWidget(BASE, WIDGET):
                     if category.value() == prev_value:
                         prev_index = self.code_combo.count()
                     icon = QgsSymbolLayerUtils.symbolPreviewIcon(category.symbol(), QSize(icon_size, icon_size))
-                    self.code_combo.addItem(icon, str(category.value()))
+
+                    item_label = f'{category.label()} - ({category.value()})' if category.label() != category.value() else category.value()
+                    self.code_combo.addItem(icon, item_label)
+                    self.code_combo.setItemData(self.code_combo.count()-1, category.value())
 
             if prev_index >= 0:
                 self.code_combo.setCurrentIndex(prev_index)
@@ -140,7 +143,10 @@ class MarkerSettingsWidget(BASE, WIDGET):
         return self.field_code_combo.currentField()
 
     def code_value(self):
-        return self.code_combo.currentText()
+        if self.code_combo.itemText(self.code_combo.currentIndex()) == self.code_combo.currentText():
+            return self.code_combo.currentData() or self.code_combo.currentText()
+        else:
+            return self.code_combo.currentText()
 
     def rotation_field(self):
         return self.field_rotation_combo.currentField()
