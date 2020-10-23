@@ -136,14 +136,14 @@ class SinglePointTemplatedMarkerTool(Tool):
             self.layer.triggerRepaint()
             self.initial_point = None
 
-    def is_compatible_with_layer(self, layer: QgsMapLayer):
+    def is_compatible_with_layer(self, layer: QgsMapLayer, is_editable: bool):
         if layer is None:
             return False
 
         if layer.type() != QgsMapLayerType.VectorLayer:
             return False
 
-        return layer.geometryType() == QgsWkbTypes.PointGeometry and layer.isEditable()
+        return layer.geometryType() == QgsWkbTypes.PointGeometry and is_editable
 
     def create_widget(self):
         self.delete_widget()

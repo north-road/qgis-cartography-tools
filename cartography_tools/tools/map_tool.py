@@ -27,7 +27,7 @@ class Tool(QgsMapToolAdvancedDigitizing):
         self.iface = iface
         self.snap_indicator = QgsSnapIndicator(canvas)
 
-    def is_compatible_with_layer(self, layer: QgsMapLayer) -> bool:
+    def is_compatible_with_layer(self, layer: QgsMapLayer, is_editable: bool) -> bool:
         """
         Returns True if tool is compatible with the specified layer
         """

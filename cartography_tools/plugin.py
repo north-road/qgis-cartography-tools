@@ -29,7 +29,8 @@ from qgis.PyQt.QtWidgets import (
 from qgis.core import (
     QgsApplication,
     QgsMapLayerType,
-    QgsMapLayer
+    QgsMapLayer,
+    QgsVectorLayer
 )
 from qgis.gui import QgisInterface
 
@@ -177,19 +178,27 @@ class CartographyToolsPlugin:
         """
         Called when editing mode is toggled
         """
-        QTimer.singleShot(0, partial(self.enable_actions_for_layer, self.iface.activeLayer()))
+        QTimer.singleShot(0, partial(self.enable_actions_for_layer, self.iface.activeLayer(), enabled))
 
-    def enable_actions_for_layer(self, layer: QgsMapLayer):
+    def enable_actions_for_layer(self, layer: QgsMapLayer, forced_edit_state=None):
         """
         Toggles whether actions should be enabled for the specified layer
         """
+
+        is_editable = forced_edit_state
+        if is_editable is None:
+            if isinstance(layer, QgsVectorLayer):
+                is_editable = layer.isEditable()
+            else:
+                is_editable = False
+
         for action in self.actions:
             if sip.isdeleted(action):
                 continue
 
             if self.tools.get(action.data()):
                 tool = self.tools[action.data()]
-                action.setEnabled(tool.is_compatible_with_layer(layer))
+                action.setEnabled(tool.is_compatible_with_layer(layer, is_editable))
                 if tool == self.active_tool and not action.isEnabled():
                     self.iface.mapCanvas().unsetMapTool(tool)
                     self.iface.actionPan().trigger()
