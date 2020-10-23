@@ -56,6 +56,8 @@ class MarkerSettingsWidget(BASE, WIDGET):
         self.field_code_combo.setLayer(layer)
         self.field_rotation_combo.setLayer(layer)
 
+        prev_code = self.code_value()
+
         if layer and layer.customProperty('cartography_tools/feature_code_field'):
             self.field_code_combo.setField(layer.customProperty('cartography_tools/feature_code_field'))
         elif layer and isinstance(layer.renderer(), QgsCategorizedSymbolRenderer):
@@ -64,11 +66,27 @@ class MarkerSettingsWidget(BASE, WIDGET):
         if layer and layer.customProperty('cartography_tools/marker_rotation_field'):
             self.field_rotation_combo.setField(layer.customProperty('cartography_tools/marker_rotation_field'))
         if layer and layer.customProperty('cartography_tools/last_feature_code'):
-            self.code_combo.setCurrentText(layer.customProperty('cartography_tools/last_feature_code'))
+            prev_code = layer.customProperty('cartography_tools/last_feature_code')
 
         self.update_for_renderer()
         if self.layer:
             layer.rendererChanged.connect(self.update_for_renderer)
+
+        # try to restore code value correctly
+        self.set_code_value(prev_code)
+
+    def set_code_value(self, value):
+        index = -1
+
+        for i in range(self.code_combo.count()):
+            if self.code_combo.itemText(i) == value:
+                index = i
+                break
+
+        if index >= 0:
+            self.code_combo.setCurrentIndex(index)
+        else:
+            self.code_combo.setCurrentText(value)
 
     def update_for_renderer(self):
         if not self.layer:
