@@ -115,7 +115,7 @@ class SinglePointTemplatedMarkerTool(Tool):
             # immediately create the feature
             if self.widget.rotation_field():
                 self.initial_point = point
-                self.create_rotation_item(point)
+                self.create_rotation_item(e.snapPoint())
                 self.layer.triggerRepaint()
             else:
                 f = self.create_feature(point=point, rotation=NULL)
