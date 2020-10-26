@@ -26,7 +26,8 @@ from qgis.PyQt.QtGui import (
 )
 from qgis.core import (
     QgsRectangle,
-    QgsPointXY
+    QgsPointXY,
+    QgsGeometry
 )
 from qgis.gui import QgsMapCanvasItem
 
@@ -117,10 +118,19 @@ class PointsAlongLineItem(QgsMapCanvasItem):
         if not painter or not self.points:
             return
 
+        all_points = self.points + ([self.hover_point] if self.hover_point else [])
+        if len(all_points) < 2:
+            return
+        
+        if all_points[-1] == all_points[-2]:
+            all_points = all_points[:-1]
+        if len(all_points) < 2:
+            return
+
+
         painter.save()
         painter.setRenderHint(QPainter.Antialiasing, True)
 
-        all_points = self.points + ([self.hover_point] if self.hover_point else [])
         canvas_points = [self.toCanvasCoordinates(p) - self.pos() for p in all_points]
 
         total_length = 0
@@ -154,12 +164,22 @@ class PointsAlongLineItem(QgsMapCanvasItem):
         else:
             marker_spacing = total_length / (self.marker_count-1)
 
+        line_geom = QgsGeometry.fromPolylineXY(all_points)
+
         if self.pixmap and total_length:
             for i in range(self.marker_count):
-                marker_point = self.toCanvasCoordinates(self.point_along_line_at_distance(all_points, distance)) - self.pos()
 
-                painter.drawPixmap(marker_point.x()-self.pixmap.width() /2,
-                                   marker_point.y()-self.pixmap.height() /2, self.pixmap)
+                point = line_geom.interpolate(distance)
+                marker_point = self.toCanvasCoordinates(point.asPoint()) - self.pos()
+
+                angle = line_geom.interpolateAngle(distance)*180/math.pi
+
+                painter.save()
+                painter.translate(marker_point.x(),
+                                   marker_point.y())
+                painter.rotate(angle)
+                painter.drawPixmap(-self.pixmap.width() /2,-self.pixmap.height() /2, self.pixmap)
+                painter.restore()
 
                 distance += marker_spacing
 
