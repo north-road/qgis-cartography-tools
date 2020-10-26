@@ -37,6 +37,8 @@ from qgis.gui import QgisInterface
 from cartography_tools.processing.provider import CartographyToolsProvider
 from cartography_tools.gui.gui_utils import GuiUtils
 from cartography_tools.tools.single_point_templated_marker import SinglePointTemplatedMarkerTool
+from cartography_tools.tools.multi_point_templated_marker import MultiPointTemplatedMarkerTool
+
 
 VERSION = '1.0.0'
 
@@ -135,6 +137,25 @@ class CartographyToolsPlugin:
         action_single_point_templated_marker.setData(SinglePointTemplatedMarkerTool.ID)
         self.toolbar.addAction(action_single_point_templated_marker)
         self.actions.append(action_single_point_templated_marker)
+
+        self.get_map_tool_action_group().addAction(action_single_point_templated_marker)
+
+
+        # multi point tool
+
+        action_multi_point_templated_marker = QAction(GuiUtils.get_icon(
+            'single_point_templated_marker.svg'), self.tr('Multiple Point Templated Marker Along LineString'))
+        action_multi_point_templated_marker.setCheckable(True)
+        self.tools[MultiPointTemplatedMarkerTool.ID] = MultiPointTemplatedMarkerTool(self.iface.mapCanvas(),
+                                                                                       self.iface.cadDockWidget(),
+                                                                                       self.iface,
+                                                                                       action_multi_point_templated_marker)
+        self.tools[MultiPointTemplatedMarkerTool.ID].setAction(action_multi_point_templated_marker)
+        action_multi_point_templated_marker.triggered.connect(partial(
+            self.switch_tool, MultiPointTemplatedMarkerTool.ID))
+        action_multi_point_templated_marker.setData(MultiPointTemplatedMarkerTool.ID)
+        self.toolbar.addAction(action_multi_point_templated_marker)
+        self.actions.append(action_multi_point_templated_marker)
 
         self.get_map_tool_action_group().addAction(action_single_point_templated_marker)
 

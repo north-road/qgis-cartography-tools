@@ -7,10 +7,9 @@ the Free Software Foundation; either version 2 of the License, or
 (at your option) any later version.
 """
 from qgis.PyQt import uic
+from qgis.PyQt.QtCore import QSize, pyqtSignal
 from qgis.PyQt.QtGui import QFontMetrics
 from qgis.PyQt.QtWidgets import QSizePolicy
-from qgis.PyQt.QtCore import QSize
-
 from qgis.core import (
     QgsFieldProxyModel,
     QgsVectorLayer,
@@ -27,7 +26,9 @@ WIDGET, BASE = uic.loadUiType(
 
 class MarkerSettingsWidget(BASE, WIDGET):
 
-    def __init__(self, parent=None):
+    count_changed = pyqtSignal(int)
+
+    def __init__(self, show_marker_count=False, parent=None):
         super(MarkerSettingsWidget, self).__init__(parent)
         self.setupUi(self)
 
@@ -45,6 +46,13 @@ class MarkerSettingsWidget(BASE, WIDGET):
         self.field_code_combo.fieldChanged.connect(self.field_code_changed)
         self.field_rotation_combo.fieldChanged.connect(self.field_rotation_changed)
         self.code_combo.currentTextChanged.connect(self.code_changed)
+        self.marker_count_spin.valueChanged.connect(self.marker_count_changed)
+
+        if not show_marker_count:
+            self.marker_count_label.setVisible(False)
+            self.marker_count_spin.setVisible(False)
+
+        self.marker_count_spin.setMinimum(2)
 
         self.layer = None
 
@@ -67,6 +75,8 @@ class MarkerSettingsWidget(BASE, WIDGET):
             self.field_rotation_combo.setField(layer.customProperty('cartography_tools/marker_rotation_field'))
         if layer and layer.customProperty('cartography_tools/last_feature_code'):
             prev_code = layer.customProperty('cartography_tools/last_feature_code')
+        if layer and layer.customProperty('cartography_tools/last_marker_count'):
+            self.marker_count_spin.setValue(int(layer.customProperty('cartography_tools/last_marker_count')))
 
         self.update_for_renderer()
         if self.layer:
@@ -109,7 +119,7 @@ class MarkerSettingsWidget(BASE, WIDGET):
 
                     item_label = f'{category.label()} - ({category.value()})' if category.label() != category.value() else category.value()
                     self.code_combo.addItem(icon, item_label)
-                    self.code_combo.setItemData(self.code_combo.count()-1, category.value())
+                    self.code_combo.setItemData(self.code_combo.count() - 1, category.value())
 
             if prev_index >= 0:
                 self.code_combo.setCurrentIndex(prev_index)
@@ -139,6 +149,14 @@ class MarkerSettingsWidget(BASE, WIDGET):
         self.field_rotation_combo.layer().setCustomProperty('cartography_tools/last_feature_code',
                                                             self.code_combo.currentText())
 
+    def marker_count_changed(self):
+        if not self.field_rotation_combo.layer():
+            return
+
+        self.field_rotation_combo.layer().setCustomProperty('cartography_tools/last_marker_count',
+                                                            self.marker_count_spin.value())
+        self.count_changed.emit(self.marker_count_spin.value())
+
     def code_field(self):
         return self.field_code_combo.currentField()
 
@@ -150,3 +168,6 @@ class MarkerSettingsWidget(BASE, WIDGET):
 
     def rotation_field(self):
         return self.field_rotation_combo.currentField()
+
+    def marker_count(self):
+        return self.marker_count_spin.value()

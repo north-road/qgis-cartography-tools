@@ -6,14 +6,24 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>243</width>
-    <height>111</height>
+    <width>254</width>
+    <height>136</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0">
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>Feature code field</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QgsFieldComboBox" name="field_code_combo"/>
+   </item>
    <item row="2" column="0">
     <widget class="QLabel" name="label_2">
      <property name="text">
@@ -27,16 +37,6 @@
    <item row="1" column="1">
     <widget class="QComboBox" name="code_combo"/>
    </item>
-   <item row="0" column="1">
-    <widget class="QgsFieldComboBox" name="field_code_combo"/>
-   </item>
-   <item row="0" column="0">
-    <widget class="QLabel" name="label">
-     <property name="text">
-      <string>Feature code field</string>
-     </property>
-    </widget>
-   </item>
    <item row="1" column="0">
     <widget class="QLabel" name="label_3">
      <property name="text">
@@ -44,12 +44,27 @@
      </property>
     </widget>
    </item>
+   <item row="3" column="0">
+    <widget class="QLabel" name="marker_count_label">
+     <property name="text">
+      <string>Marker count</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="1">
+    <widget class="QgsSpinBox" name="marker_count_spin"/>
+   </item>
   </layout>
  </widget>
  <customwidgets>
   <customwidget>
    <class>QgsFieldComboBox</class>
    <extends>QComboBox</extends>
+   <header>qgis.gui</header>
+  </customwidget>
+  <customwidget>
+   <class>QgsSpinBox</class>
+   <extends>QSpinBox</extends>
    <header>qgis.gui</header>
   </customwidget>
  </customwidgets>
