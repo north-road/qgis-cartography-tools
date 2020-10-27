@@ -172,8 +172,7 @@ class MultiPointTemplatedMarkerTool(Tool):
         self.delete_widget()
 
         self.widget = MarkerSettingsWidget(show_marker_count=True, show_orientation=True)
-        self.iface.addUserInputWidget(self.widget)
-        self.widget.setFocus(Qt.TabFocusReason)
+        self.set_user_input_widget(self.widget)
         self.widget.set_layer(self.current_layer())
 
         self.widget.count_changed.connect(self.count_changed)

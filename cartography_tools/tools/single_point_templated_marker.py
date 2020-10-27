@@ -157,8 +157,7 @@ class SinglePointTemplatedMarkerTool(Tool):
         self.delete_widget()
 
         self.widget = MarkerSettingsWidget()
-        self.iface.addUserInputWidget(self.widget)
-        self.widget.setFocus(Qt.TabFocusReason)
+        self.set_user_input_widget(self.widget)
         self.widget.set_layer(self.current_layer())
 
     def delete_widget(self):
