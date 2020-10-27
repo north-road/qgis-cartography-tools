@@ -7,8 +7,6 @@ the Free Software Foundation; either version 2 of the License, or
 (at your option) any later version.
 """
 
-import math
-
 from qgis.PyQt.QtCore import (
     Qt,
     QSizeF
@@ -16,21 +14,20 @@ from qgis.PyQt.QtCore import (
 from qgis.PyQt.QtGui import (
     QImage,
     QPixmap,
-    QFontMetricsF,
     QColor,
     QPainter,
     QPen,
     QPainterPath,
-    QBrush,
     QFont
 )
 from qgis.core import (
     QgsRectangle,
-    QgsPointXY,
-    QgsGeometry
+    QgsPointXY
 )
 from qgis.gui import QgsMapCanvasItem
 
+from cartography_tools.core.geometry import GeometryUtils
+from cartography_tools.core.utils import Utils
 from cartography_tools.gui.gui_utils import GuiUtils
 
 
@@ -107,7 +104,8 @@ class PointsAlongLineItem(QgsMapCanvasItem):
         res = map_to_pixel.mapUnitsPerPixel()
         top_left = map_to_pixel.toMapCoordinates(r.xMinimum(), r.yMinimum())
 
-        self.setRect(QgsRectangle(top_left.x(), top_left.y(), top_left.x() + r.width() * res, top_left.y() - r.height() * res))
+        self.setRect(
+            QgsRectangle(top_left.x(), top_left.y(), top_left.x() + r.width() * res, top_left.y() - r.height() * res))
 
         self.setVisible(True)
 
@@ -119,26 +117,14 @@ class PointsAlongLineItem(QgsMapCanvasItem):
             return
 
         all_points = self.points + ([self.hover_point] if self.hover_point else [])
+        all_points = Utils.unique_ordered_list(all_points)
         if len(all_points) < 2:
             return
-        
-        if all_points[-1] == all_points[-2]:
-            all_points = all_points[:-1]
-        if len(all_points) < 2:
-            return
-
 
         painter.save()
         painter.setRenderHint(QPainter.Antialiasing, True)
 
-        canvas_points = [self.toCanvasCoordinates(p) - self.pos() for p in all_points]
-
-        total_length = 0
-        prev_point = None
-        for p in all_points:
-            if prev_point is not None:
-                total_length += prev_point.distance(p)
-            prev_point = p
+        canvas_points = [QgsPointXY(self.toCanvasCoordinates(p) - self.pos()) for p in all_points]
 
         line_path = QPainterPath()
         line_path.moveTo(canvas_points[0].x(), canvas_points[0].y())
@@ -149,39 +135,25 @@ class PointsAlongLineItem(QgsMapCanvasItem):
         # against a range of backgrounds
         pen = QPen()
         pen.setWidth(GuiUtils.scale_icon_size(4))
-        pen.setColor(QColor(255,255,255,100))
+        pen.setColor(QColor(255, 255, 255, 100))
         pen.setStyle(Qt.DashLine)
         painter.setPen(pen)
         painter.drawPath(line_path)
         pen.setWidth(GuiUtils.scale_icon_size(1))
-        pen.setColor(QColor(255,0,0,100))
+        pen.setColor(QColor(255, 0, 0, 100))
         painter.setPen(pen)
         painter.drawPath(line_path)
 
-        distance = 0
-        if self.marker_count == 1:
-            marker_spacing = total_length
-        else:
-            marker_spacing = total_length / (self.marker_count-1)
+        if self.pixmap:
+            generated_points = GeometryUtils.generate_rotated_points_along_path(canvas_points, self.marker_count)
 
-        line_geom = QgsGeometry.fromPolylineXY(all_points)
-
-        if self.pixmap and total_length:
-            for i in range(self.marker_count):
-
-                point = line_geom.interpolate(distance)
-                marker_point = self.toCanvasCoordinates(point.asPoint()) - self.pos()
-
-                angle = line_geom.interpolateAngle(distance)*180/math.pi
-
+            for marker_point, angle in generated_points:
                 painter.save()
                 painter.translate(marker_point.x(),
-                                   marker_point.y())
-                painter.rotate(angle)
-                painter.drawPixmap(-self.pixmap.width() /2,-self.pixmap.height() /2, self.pixmap)
+                                  marker_point.y())
+                painter.rotate(180-angle)
+                painter.drawPixmap(-self.pixmap.width() / 2, -self.pixmap.height() / 2, self.pixmap)
                 painter.restore()
-
-                distance += marker_spacing
 
         painter.restore()
 
@@ -195,7 +167,7 @@ class PointsAlongLineItem(QgsMapCanvasItem):
                 prev_point = p
                 continue
 
-            fraction = (distance - traversed)/this_segment_length
+            fraction = (distance - traversed) / this_segment_length
             dx = p.x() - prev_point.x()
             dy = p.y() - prev_point.y()
             return QgsPointXY(prev_point.x() + dx * fraction, prev_point.y() + dy * fraction)
@@ -207,7 +179,3 @@ class PointsAlongLineItem(QgsMapCanvasItem):
 
     def set_marker_count(self, count):
         self.marker_count = count
-
-
-
-

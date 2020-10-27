@@ -6,6 +6,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2 of the License, or
 (at your option) any later version.
 """
+from typing import Optional
 
 from qgis.PyQt.QtCore import Qt
 
@@ -33,6 +34,7 @@ from cartography_tools.tools.map_tool import Tool
 from cartography_tools.tools.marker_settings_widget import MarkerSettingsWidget
 from cartography_tools.tools.points_along_line_item import PointsAlongLineItem
 from cartography_tools.gui.gui_utils import GuiUtils
+from cartography_tools.core.geometry import GeometryUtils
 
 
 class MultiPointTemplatedMarkerTool(Tool):
@@ -48,16 +50,17 @@ class MultiPointTemplatedMarkerTool(Tool):
         self.points = []
         self.line_item = None
 
-    def create_feature(self, points) -> QgsFeature:
+    def create_point_feature(self, point: Optional[QgsPointXY] = None, angle: Optional[float] = None) -> QgsFeature:
         f = QgsFeature(self.layer.fields())
 
         if self.widget.code_field():
             f[self.widget.code_field()] = self.widget.code_value()
 
-       # if self.widget.rotation_field():
-       #     f[self.widget.rotation_field()] = rotation
+        if angle is not None and self.widget.rotation_field():
+            f[self.widget.rotation_field()] = angle
 
-        #f.setGeometry(QgsGeometry.fromPointXY(point))
+        if point is not None:
+            f.setGeometry(QgsGeometry.fromPointXY(point))
 
         return f
 
@@ -67,13 +70,10 @@ class MultiPointTemplatedMarkerTool(Tool):
         if self.points and self.line_item:
             # update preview line item
             self.line_item.set_hover_point(event.snapPoint())
-
-            #point = self.toLayerCoordinates(self.layer, event.snapPoint())
-            #self.rotation_item.set_symbol_rotation(self.initial_point.azimuth(point))
             self.line_item.update()
 
-    def create_line_item(self, map_point: QgsPointXY):
-        f = self.create_feature(0)
+    def set_line_item_symbol(self):
+        f = self.create_point_feature()
 
         # find symbol for feature
         renderer = self.layer.renderer().clone()
@@ -97,9 +97,12 @@ class MultiPointTemplatedMarkerTool(Tool):
 
         # render symbol to image
         symbol_image = GuiUtils.big_marker_preview_image(symbol, context.expressionContext())
-
-        self.line_item = PointsAlongLineItem(self.canvas(), map_point)
         self.line_item.set_symbol(symbol_image)
+        self.line_item.update()
+
+    def create_line_item(self, map_point: QgsPointXY):
+        self.line_item = PointsAlongLineItem(self.canvas(), map_point)
+        self.set_line_item_symbol()
         self.line_item.set_marker_count(self.widget.marker_count())
         self.line_item.update()
 
@@ -117,12 +120,28 @@ class MultiPointTemplatedMarkerTool(Tool):
             self.create_line_item(e.snapPoint())
             self.layer.triggerRepaint()
         elif e.button() == Qt.LeftButton:
+            # subsequent left clicks -- add node to line
             self.points.append(point)
             self.line_item.add_point(e.snapPoint())
-        else:
+        elif e.button() == Qt.RightButton and self.points:
+            # right click -- finish line
+            self.create_features()
             self.layer.triggerRepaint()
             self.points = []
             self.remove_line_item()
+
+    def create_features(self):
+        res = GeometryUtils.generate_rotated_points_along_path(self.points, self.widget.marker_count())
+        if not res:
+            return
+
+        self.layer.beginEditCommand(self.tr('Create Markers Along Line'))
+        for point, angle in res:
+            f = self.create_point_feature(point=point, angle=angle)
+            self.layer.addFeature(f)
+        self.layer.endEditCommand()
+        self.layer.triggerRepaint()
+
 
     def keyPressEvent(self, e):
         if self.points and e.key() == Qt.Key_Escape and not e.isAutoRepeat():
@@ -148,11 +167,16 @@ class MultiPointTemplatedMarkerTool(Tool):
         self.widget.set_layer(self.layer)
 
         self.widget.count_changed.connect(self.count_changed)
+        self.widget.code_changed.connect(self.code_changed)
 
     def count_changed(self, count):
         if self.line_item:
             self.line_item.set_marker_count(count)
             self.line_item.update()
+
+    def code_changed(self):
+        if self.line_item and self.points:
+            self.set_line_item_symbol()
 
     def delete_widget(self):
         if self.widget:

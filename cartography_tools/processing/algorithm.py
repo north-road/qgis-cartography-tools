@@ -28,7 +28,7 @@ from qgis.core import (QgsWkbTypes,
                        QgsProcessingParameterExpression,
                        QgsProcessingParameterDistance,
                        QgsProcessingParameterFeatureSink)
-from cartography_tools.processing.geometry import GeometryUtils
+from cartography_tools.core.geometry import GeometryUtils
 
 
 class RemoveRoundaboutsAlgorithm(QgsProcessingAlgorithm):

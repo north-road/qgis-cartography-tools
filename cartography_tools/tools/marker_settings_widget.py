@@ -27,6 +27,7 @@ WIDGET, BASE = uic.loadUiType(
 class MarkerSettingsWidget(BASE, WIDGET):
 
     count_changed = pyqtSignal(int)
+    code_changed = pyqtSignal()
 
     def __init__(self, show_marker_count=False, parent=None):
         super(MarkerSettingsWidget, self).__init__(parent)
@@ -45,7 +46,7 @@ class MarkerSettingsWidget(BASE, WIDGET):
 
         self.field_code_combo.fieldChanged.connect(self.field_code_changed)
         self.field_rotation_combo.fieldChanged.connect(self.field_rotation_changed)
-        self.code_combo.currentTextChanged.connect(self.code_changed)
+        self.code_combo.currentTextChanged.connect(self.on_code_changed)
         self.marker_count_spin.valueChanged.connect(self.marker_count_changed)
 
         if not show_marker_count:
@@ -142,12 +143,13 @@ class MarkerSettingsWidget(BASE, WIDGET):
         self.field_rotation_combo.layer().setCustomProperty('cartography_tools/marker_rotation_field',
                                                             self.field_rotation_combo.currentField())
 
-    def code_changed(self):
+    def on_code_changed(self):
         if not self.field_rotation_combo.layer():
             return
 
         self.field_rotation_combo.layer().setCustomProperty('cartography_tools/last_feature_code',
-                                                            self.code_combo.currentText())
+                                                            self.code_value())
+        self.code_changed.emit()
 
     def marker_count_changed(self):
         if not self.field_rotation_combo.layer():
