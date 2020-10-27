@@ -144,7 +144,7 @@ class CartographyToolsPlugin:
         # multi point tool
 
         action_multi_point_templated_marker = QAction(GuiUtils.get_icon(
-            'single_point_templated_marker.svg'), self.tr('Multiple Point Templated Marker Along LineString'))
+            'multi_point_templated_marker.svg'), self.tr('Multiple Point Templated Marker Along LineString'))
         action_multi_point_templated_marker.setCheckable(True)
         self.tools[MultiPointTemplatedMarkerTool.ID] = MultiPointTemplatedMarkerTool(self.iface.mapCanvas(),
                                                                                        self.iface.cadDockWidget(),
