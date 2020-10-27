@@ -6,7 +6,9 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2 of the License, or
 (at your option) any later version.
 """
+from typing import Optional
 
+from qgis.PyQt import sip
 from qgis.PyQt.QtCore import Qt
 
 from qgis.core import (
@@ -44,12 +46,12 @@ class SinglePointTemplatedMarkerTool(Tool):
         self.setCursor(QgsApplication.getThemeCursor(QgsApplication.Cursor.CapturePoint))
 
         self.widget = None
-        self.layer = None
+        self._layer = None
         self.initial_point = None
         self.rotation_item = None
 
     def create_feature(self, point: QgsPointXY, rotation: float) -> QgsFeature:
-        f = QgsFeature(self.layer.fields())
+        f = QgsFeature(self.current_layer().fields())
 
         if self.widget.code_field():
             f[self.widget.code_field()] = self.widget.code_value()
@@ -64,9 +66,9 @@ class SinglePointTemplatedMarkerTool(Tool):
     def cadCanvasMoveEvent(self, event):  # pylint: disable=missing-docstring
         self.snap_indicator.setMatch(event.mapPointMatch())
 
-        if self.initial_point is not None and self.rotation_item:
+        if self.initial_point is not None and self.rotation_item and self.current_layer():
             # update preview rotation
-            point = self.toLayerCoordinates(self.layer, event.snapPoint())
+            point = self.toLayerCoordinates(self.current_layer(), event.snapPoint())
             self.rotation_item.set_symbol_rotation(self.initial_point.azimuth(point))
             self.rotation_item.update()
 
@@ -74,19 +76,19 @@ class SinglePointTemplatedMarkerTool(Tool):
         f = self.create_feature(point=self.initial_point, rotation=0)
 
         # find symbol for feature
-        renderer = self.layer.renderer().clone()
+        renderer = self.current_layer().renderer().clone()
         context = QgsRenderContext.fromMapSettings(self.canvas().mapSettings())
-        context.expressionContext().appendScope(QgsExpressionContextUtils.layerScope(self.layer))
+        context.expressionContext().appendScope(QgsExpressionContextUtils.layerScope(self.current_layer()))
         context.expressionContext().setFeature(f)
 
-        renderer.startRender(context, self.layer.fields())
+        renderer.startRender(context, self.current_layer().fields())
         symbol = renderer.originalSymbolForFeature(f, context)
         if symbol is None:
             # e.g. code which doesn't match existing category
             if len(renderer.symbols(context)):
                 symbol = renderer.symbols(context)[0]
             else:
-                symbol = QgsSymbol.defaultSymbol(self.layer.geometryType())
+                symbol = QgsSymbol.defaultSymbol(self.current_layer().geometryType())
 
         renderer.stopRender(context)
 
@@ -109,31 +111,37 @@ class SinglePointTemplatedMarkerTool(Tool):
             self.rotation_item = None
 
     def cadCanvasPressEvent(self, e: QgsMapMouseEvent):
-        point = self.toLayerCoordinates(self.layer, e.snapPoint())
+        if not self.current_layer():
+            self.initial_point = None
+            self.remove_rotation_item()
+            return
+
+        point = self.toLayerCoordinates(self.current_layer(), e.snapPoint())
         if self.initial_point is None and e.button() == Qt.LeftButton:
             # depending on whether a rotation field is selected, we either start the interactive rotation or
             # immediately create the feature
             if self.widget.rotation_field():
                 self.initial_point = point
                 self.create_rotation_item(e.snapPoint())
-                self.layer.triggerRepaint()
+                self.current_layer().triggerRepaint()
             else:
                 f = self.create_feature(point=point, rotation=NULL)
-                self.layer.addFeature(f)
-                self.layer.triggerRepaint()
+                self.current_layer().addFeature(f)
+                self.current_layer().triggerRepaint()
         else:
             if e.button() == Qt.LeftButton:
                 f = self.create_feature(point=self.initial_point, rotation=self.initial_point.azimuth(point))
-                self.layer.addFeature(f)
+                self.current_layer().addFeature(f)
 
-            self.layer.triggerRepaint()
+            self.current_layer().triggerRepaint()
             self.initial_point = None
             self.remove_rotation_item()
 
     def keyPressEvent(self, e):
         if self.initial_point and e.key() == Qt.Key_Escape and not e.isAutoRepeat():
             self.remove_rotation_item()
-            self.layer.triggerRepaint()
+            if self.current_layer():
+                self.current_layer().triggerRepaint()
             self.initial_point = None
 
     def is_compatible_with_layer(self, layer: QgsMapLayer, is_editable: bool):
@@ -151,7 +159,7 @@ class SinglePointTemplatedMarkerTool(Tool):
         self.widget = MarkerSettingsWidget()
         self.iface.addUserInputWidget(self.widget)
         self.widget.setFocus(Qt.TabFocusReason)
-        self.widget.set_layer(self.layer)
+        self.widget.set_layer(self.current_layer())
 
     def delete_widget(self):
         if self.widget:
@@ -169,6 +177,11 @@ class SinglePointTemplatedMarkerTool(Tool):
         self.create_widget()
 
     def set_layer(self, layer: QgsVectorLayer):
-        self.layer = layer
+        self._layer = layer
         if self.widget:
             self.widget.set_layer(layer)
+
+    def current_layer(self) -> Optional[QgsVectorLayer]:
+        if self._layer is not None and not sip.isdeleted(self._layer):
+            return self._layer
+        return None

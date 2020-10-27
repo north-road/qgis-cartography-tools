@@ -78,7 +78,6 @@ class CartographyToolsPlugin:
         self.actions = []
         self.tools = {}
 
-        self.previous_layer = None
         self.active_tool = None
 
     @staticmethod
@@ -110,7 +109,6 @@ class CartographyToolsPlugin:
 
         self.create_tools()
 
-        self.previous_layer = self.iface.activeLayer()
         self.iface.currentLayerChanged.connect(self.current_layer_changed)
         self.iface.actionToggleEditing().toggled.connect(self.editing_toggled)
 
@@ -183,14 +181,13 @@ class CartographyToolsPlugin:
 
         self.iface.mapCanvas().setMapTool(tool)
         self.active_tool = tool
-        self.active_tool.set_layer(self.previous_layer)
+        self.active_tool.set_layer(self.iface.activeLayer())
 
     def current_layer_changed(self, layer: QgsMapLayer):
         """
         Called when the current layer changes
         """
         self.enable_actions_for_layer(layer)
-        self.previous_layer = layer
 
         if self.active_tool:
             self.active_tool.set_layer(layer)

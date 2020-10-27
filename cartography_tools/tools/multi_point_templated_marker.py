@@ -8,6 +8,7 @@ the Free Software Foundation; either version 2 of the License, or
 """
 from typing import Optional
 
+from qgis.PyQt import sip
 from qgis.PyQt.QtCore import Qt
 
 from qgis.core import (
@@ -46,12 +47,12 @@ class MultiPointTemplatedMarkerTool(Tool):
         self.setCursor(QgsApplication.getThemeCursor(QgsApplication.Cursor.CapturePoint))
 
         self.widget = None
-        self.layer = None
+        self._layer = None
         self.points = []
         self.line_item = None
 
     def create_point_feature(self, point: Optional[QgsPointXY] = None, angle: Optional[float] = None) -> QgsFeature:
-        f = QgsFeature(self.layer.fields())
+        f = QgsFeature(self.current_layer().fields())
 
         if self.widget.code_field():
             f[self.widget.code_field()] = self.widget.code_value()
@@ -76,19 +77,19 @@ class MultiPointTemplatedMarkerTool(Tool):
         f = self.create_point_feature()
 
         # find symbol for feature
-        renderer = self.layer.renderer().clone()
+        renderer = self.current_layer().renderer().clone()
         context = QgsRenderContext.fromMapSettings(self.canvas().mapSettings())
-        context.expressionContext().appendScope(QgsExpressionContextUtils.layerScope(self.layer))
+        context.expressionContext().appendScope(QgsExpressionContextUtils.layerScope(self.current_layer()))
         context.expressionContext().setFeature(f)
 
-        renderer.startRender(context, self.layer.fields())
+        renderer.startRender(context, self.current_layer().fields())
         symbol = renderer.originalSymbolForFeature(f, context)
         if symbol is None:
             # e.g. code which doesn't match existing category
             if len(renderer.symbols(context)):
                 symbol = renderer.symbols(context)[0]
             else:
-                symbol = QgsSymbol.defaultSymbol(self.layer.geometryType())
+                symbol = QgsSymbol.defaultSymbol(self.current_layer().geometryType())
 
         renderer.stopRender(context)
 
@@ -114,12 +115,17 @@ class MultiPointTemplatedMarkerTool(Tool):
             self.line_item = None
 
     def cadCanvasPressEvent(self, e: QgsMapMouseEvent):
-        point = self.toLayerCoordinates(self.layer, e.snapPoint())
+        if not self.current_layer():
+            self.points = []
+            self.remove_line_item()
+            return
+
+        point = self.toLayerCoordinates(self.current_layer(), e.snapPoint())
         if not self.points and e.button() == Qt.LeftButton:
             # first point -- create the preview item
             self.points.append(point)
             self.create_line_item(e.snapPoint())
-            self.layer.triggerRepaint()
+            self.current_layer().triggerRepaint()
         elif e.button() == Qt.LeftButton:
             # subsequent left clicks -- add node to line
             self.points.append(point)
@@ -127,26 +133,30 @@ class MultiPointTemplatedMarkerTool(Tool):
         elif e.button() == Qt.RightButton and self.points:
             # right click -- finish line
             self.create_features()
-            self.layer.triggerRepaint()
+            self.current_layer().triggerRepaint()
             self.points = []
             self.remove_line_item()
 
     def create_features(self):
+        if not self.current_layer():
+            return
+
         res = GeometryUtils.generate_rotated_points_along_path(self.points, self.widget.marker_count(), orientation=-self.widget.orientation())
         if not res:
             return
 
-        self.layer.beginEditCommand(self.tr('Create Markers Along Line'))
+        self.current_layer().beginEditCommand(self.tr('Create Markers Along Line'))
         for point, angle in res:
             f = self.create_point_feature(point=point, angle=angle)
-            self.layer.addFeature(f)
-        self.layer.endEditCommand()
-        self.layer.triggerRepaint()
+            self.current_layer().addFeature(f)
+        self.current_layer().endEditCommand()
+        self.current_layer().triggerRepaint()
 
     def keyPressEvent(self, e):
         if self.points and e.key() == Qt.Key_Escape and not e.isAutoRepeat():
             self.remove_line_item()
-            self.layer.triggerRepaint()
+            if self.current_layer():
+                self.current_layer().triggerRepaint()
             self.points = []
 
     def is_compatible_with_layer(self, layer: QgsMapLayer, is_editable: bool):
@@ -164,7 +174,7 @@ class MultiPointTemplatedMarkerTool(Tool):
         self.widget = MarkerSettingsWidget(show_marker_count=True, show_orientation=True)
         self.iface.addUserInputWidget(self.widget)
         self.widget.setFocus(Qt.TabFocusReason)
-        self.widget.set_layer(self.layer)
+        self.widget.set_layer(self.current_layer())
 
         self.widget.count_changed.connect(self.count_changed)
         self.widget.code_changed.connect(self.code_changed)
@@ -200,6 +210,11 @@ class MultiPointTemplatedMarkerTool(Tool):
         self.create_widget()
 
     def set_layer(self, layer: QgsVectorLayer):
-        self.layer = layer
+        self._layer = layer
         if self.widget:
             self.widget.set_layer(layer)
+
+    def current_layer(self) -> Optional[QgsVectorLayer]:
+        if self._layer is not None and not sip.isdeleted(self._layer):
+            return self._layer
+        return None
