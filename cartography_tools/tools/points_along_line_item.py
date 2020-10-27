@@ -41,15 +41,8 @@ class PointsAlongLineItem(QgsMapCanvasItem):
 
         self.canvas = canvas
 
-        self.rotation = 0
+        self.orientation = 0
         self.pixmap = QPixmap()
-        self.item_size = QSizeF()
-
-        self.marker_font = QFont()
-        self.marker_font.setPointSize(12)
-        self.marker_font.setBold(True)
-
-        self.arrow_path = QPainterPath()
 
         im = QImage(24, 24, QImage.Format_ARGB32)
         im.fill(Qt.transparent)
@@ -99,8 +92,6 @@ class PointsAlongLineItem(QgsMapCanvasItem):
             else:
                 r.combineExtentWith(point_rect)
 
-            prev_point = p
-
         res = map_to_pixel.mapUnitsPerPixel()
         top_left = map_to_pixel.toMapCoordinates(r.xMinimum(), r.yMinimum())
 
@@ -145,7 +136,7 @@ class PointsAlongLineItem(QgsMapCanvasItem):
         painter.drawPath(line_path)
 
         if self.pixmap:
-            generated_points = GeometryUtils.generate_rotated_points_along_path(canvas_points, self.marker_count)
+            generated_points = GeometryUtils.generate_rotated_points_along_path(canvas_points, self.marker_count, self.orientation)
 
             for marker_point, angle in generated_points:
                 painter.save()
@@ -157,25 +148,11 @@ class PointsAlongLineItem(QgsMapCanvasItem):
 
         painter.restore()
 
-    def point_along_line_at_distance(self, points, distance):
-        traversed = 0
-        prev_point = points[0]
-        for p in points[1:]:
-            this_segment_length = p.distance(prev_point)
-            if traversed + this_segment_length < distance:
-                traversed += this_segment_length
-                prev_point = p
-                continue
-
-            fraction = (distance - traversed) / this_segment_length
-            dx = p.x() - prev_point.x()
-            dy = p.y() - prev_point.y()
-            return QgsPointXY(prev_point.x() + dx * fraction, prev_point.y() + dy * fraction)
-
-        return prev_point
-
     def set_symbol(self, symbol_image: QImage):
         self.pixmap = QPixmap.fromImage(symbol_image)
 
     def set_marker_count(self, count):
         self.marker_count = count
+
+    def set_orientation(self, orientation: float):
+        self.orientation = orientation

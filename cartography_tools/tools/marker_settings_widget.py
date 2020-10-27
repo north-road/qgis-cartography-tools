@@ -28,8 +28,9 @@ class MarkerSettingsWidget(BASE, WIDGET):
 
     count_changed = pyqtSignal(int)
     code_changed = pyqtSignal()
+    orientation_changed = pyqtSignal()
 
-    def __init__(self, show_marker_count=False, parent=None):
+    def __init__(self, show_marker_count=False, show_orientation=False, parent=None):
         super(MarkerSettingsWidget, self).__init__(parent)
         self.setupUi(self)
 
@@ -52,6 +53,16 @@ class MarkerSettingsWidget(BASE, WIDGET):
         if not show_marker_count:
             self.marker_count_label.setVisible(False)
             self.marker_count_spin.setVisible(False)
+        if not show_orientation:
+            self.orientation_label.setVisible(False)
+            self.orientation_combo.setVisible(False)
+
+        self.orientation_combo.addItem("0°", 0.0)
+        self.orientation_combo.addItem("90°", 90.0)
+        self.orientation_combo.addItem("180°", 180.0)
+        self.orientation_combo.addItem("270°", 270.0)
+
+        self.orientation_combo.currentIndexChanged.connect(self.on_orientation_changed)
 
         self.marker_count_spin.setMinimum(2)
 
@@ -78,6 +89,8 @@ class MarkerSettingsWidget(BASE, WIDGET):
             prev_code = layer.customProperty('cartography_tools/last_feature_code')
         if layer and layer.customProperty('cartography_tools/last_marker_count'):
             self.marker_count_spin.setValue(int(layer.customProperty('cartography_tools/last_marker_count')))
+        if layer and layer.customProperty('cartography_tools/last_orientation'):
+            self.orientation_combo.setCurrentIndex(self.orientation_combo.findData(float(layer.customProperty('cartography_tools/last_orientation'))))
 
         self.update_for_renderer()
         if self.layer:
@@ -159,6 +172,14 @@ class MarkerSettingsWidget(BASE, WIDGET):
                                                             self.marker_count_spin.value())
         self.count_changed.emit(self.marker_count_spin.value())
 
+    def on_orientation_changed(self):
+        if not self.field_rotation_combo.layer():
+            return
+
+        self.field_rotation_combo.layer().setCustomProperty('cartography_tools/last_orientation',
+                                                            self.orientation_combo.currentData())
+        self.orientation_changed.emit()
+
     def code_field(self):
         return self.field_code_combo.currentField()
 
@@ -173,3 +194,6 @@ class MarkerSettingsWidget(BASE, WIDGET):
 
     def marker_count(self):
         return self.marker_count_spin.value()
+
+    def orientation(self) -> float:
+        return self.orientation_combo.currentData()

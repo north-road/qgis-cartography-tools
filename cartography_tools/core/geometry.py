@@ -29,7 +29,7 @@ class GeometryUtils:
     """
 
     @staticmethod
-    def generate_rotated_points_along_path(points: List[QgsPointXY], point_count: int) -> List[
+    def generate_rotated_points_along_path(points: List[QgsPointXY], point_count: int, orientation: float = 0) -> List[
         Tuple[QgsPointXY, float]]:
         """
         Generates a list of rotated points along a path defined by a list of QgsPointXY objects
@@ -66,7 +66,7 @@ class GeometryUtils:
                 distance = total_length
 
             point = line_geom.interpolate(distance).asPoint()
-            angle = line_geom.interpolateAngle(distance) * 180 / math.pi
+            angle = line_geom.interpolateAngle(distance) * 180 / math.pi - orientation
 
             return_points.append((point, angle))
 

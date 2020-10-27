@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>254</width>
-    <height>136</height>
+    <width>263</width>
+    <height>170</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -21,8 +21,18 @@
      </property>
     </widget>
    </item>
+   <item row="3" column="1">
+    <widget class="QgsSpinBox" name="marker_count_spin"/>
+   </item>
    <item row="0" column="1">
     <widget class="QgsFieldComboBox" name="field_code_combo"/>
+   </item>
+   <item row="3" column="0">
+    <widget class="QLabel" name="marker_count_label">
+     <property name="text">
+      <string>Marker count</string>
+     </property>
+    </widget>
    </item>
    <item row="2" column="0">
     <widget class="QLabel" name="label_2">
@@ -44,15 +54,15 @@
      </property>
     </widget>
    </item>
-   <item row="3" column="0">
-    <widget class="QLabel" name="marker_count_label">
+   <item row="4" column="0">
+    <widget class="QLabel" name="orientation_label">
      <property name="text">
-      <string>Marker count</string>
+      <string>Orientation</string>
      </property>
     </widget>
    </item>
-   <item row="3" column="1">
-    <widget class="QgsSpinBox" name="marker_count_spin"/>
+   <item row="4" column="1">
+    <widget class="QComboBox" name="orientation_combo"/>
    </item>
   </layout>
  </widget>

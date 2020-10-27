@@ -103,6 +103,7 @@ class MultiPointTemplatedMarkerTool(Tool):
     def create_line_item(self, map_point: QgsPointXY):
         self.line_item = PointsAlongLineItem(self.canvas(), map_point)
         self.set_line_item_symbol()
+        self.line_item.set_orientation(self.widget.orientation())
         self.line_item.set_marker_count(self.widget.marker_count())
         self.line_item.update()
 
@@ -131,7 +132,7 @@ class MultiPointTemplatedMarkerTool(Tool):
             self.remove_line_item()
 
     def create_features(self):
-        res = GeometryUtils.generate_rotated_points_along_path(self.points, self.widget.marker_count())
+        res = GeometryUtils.generate_rotated_points_along_path(self.points, self.widget.marker_count(), orientation=-self.widget.orientation())
         if not res:
             return
 
@@ -141,7 +142,6 @@ class MultiPointTemplatedMarkerTool(Tool):
             self.layer.addFeature(f)
         self.layer.endEditCommand()
         self.layer.triggerRepaint()
-
 
     def keyPressEvent(self, e):
         if self.points and e.key() == Qt.Key_Escape and not e.isAutoRepeat():
@@ -161,17 +161,23 @@ class MultiPointTemplatedMarkerTool(Tool):
     def create_widget(self):
         self.delete_widget()
 
-        self.widget = MarkerSettingsWidget(show_marker_count=True)
+        self.widget = MarkerSettingsWidget(show_marker_count=True, show_orientation=True)
         self.iface.addUserInputWidget(self.widget)
         self.widget.setFocus(Qt.TabFocusReason)
         self.widget.set_layer(self.layer)
 
         self.widget.count_changed.connect(self.count_changed)
         self.widget.code_changed.connect(self.code_changed)
+        self.widget.orientation_changed.connect(self.orientation_changed)
 
     def count_changed(self, count):
         if self.line_item:
             self.line_item.set_marker_count(count)
+            self.line_item.update()
+
+    def orientation_changed(self):
+        if self.line_item:
+            self.line_item.set_orientation(self.widget.orientation())
             self.line_item.update()
 
     def code_changed(self):
