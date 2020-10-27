@@ -61,7 +61,7 @@ class CartographyToolsProvider(QgsProcessingProvider):
         """
         Provider plugin version
         """
-        return "1.0.6"
+        return "1.0.7"
 
     def id(self):
         """
