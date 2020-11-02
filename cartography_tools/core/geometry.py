@@ -12,7 +12,7 @@
 """
 
 import math
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 from qgis.core import (QgsLineString,
                        QgsVertexId,
@@ -29,7 +29,10 @@ class GeometryUtils:
     """
 
     @staticmethod
-    def generate_rotated_points_along_path(points: List[QgsPointXY], point_count: int, orientation: float = 0, include_endpoints: bool = True) -> List[
+    def generate_rotated_points_along_path(points: List[QgsPointXY],
+                                           point_count: Optional[int] = None,
+                                           point_distance: Optional[float] = None,
+                                           orientation: float = 0, include_endpoints: bool = True) -> List[
         Tuple[QgsPointXY, float]]:
         """
         Generates a list of rotated points along a path defined by a list of QgsPointXY objects
@@ -39,6 +42,9 @@ class GeometryUtils:
         points = Utils.unique_ordered_list(points)
 
         if len(points) < 2:
+            return []
+
+        if point_distance is not None and not point_distance:
             return []
 
         # calculate total length
@@ -53,15 +59,23 @@ class GeometryUtils:
             return []
 
         distance = 0
-        if point_count == 1:
-            marker_spacing = total_length
-            distance = total_length / 2
-        else:
-            if include_endpoints:
-                marker_spacing = total_length / (point_count - 1)
+        if point_count is not None:
+            if point_count == 1:
+                marker_spacing = total_length
+                distance = total_length / 2
             else:
-                marker_spacing = total_length / (point_count + 1)
+                if include_endpoints:
+                    marker_spacing = total_length / (point_count - 1)
+                else:
+                    marker_spacing = total_length / (point_count + 1)
+                    distance = marker_spacing
+        else:
+            marker_spacing = point_distance
+            if not include_endpoints:
                 distance = marker_spacing
+                point_count = math.ceil((total_length / marker_spacing)-1)
+            else:
+                point_count = math.ceil((total_length / marker_spacing)+1)
 
         line_geom = QgsGeometry.fromPolylineXY(points)
 

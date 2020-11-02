@@ -27,6 +27,7 @@ WIDGET, BASE = uic.loadUiType(
 class MarkerSettingsWidget(BASE, WIDGET):
 
     count_changed = pyqtSignal(int)
+    distance_changed = pyqtSignal(float)
     code_changed = pyqtSignal()
     orientation_changed = pyqtSignal()
     placement_changed = pyqtSignal()
@@ -50,10 +51,14 @@ class MarkerSettingsWidget(BASE, WIDGET):
         self.field_rotation_combo.fieldChanged.connect(self.field_rotation_changed)
         self.code_combo.currentTextChanged.connect(self.on_code_changed)
         self.marker_count_spin.valueChanged.connect(self.marker_count_changed)
+        self.marker_distance_spin.valueChanged.connect(self.marker_distance_changed)
 
         if not show_marker_count:
             self.marker_count_label.setVisible(False)
             self.marker_count_spin.setVisible(False)
+            self.spacing_label.setVisible(False)
+            self.spacing_combo.setVisible(False)
+            self.spacing_stacked_widget.setVisible(False)
         if not show_orientation:
             self.orientation_label.setVisible(False)
             self.orientation_combo.setVisible(False)
@@ -69,8 +74,12 @@ class MarkerSettingsWidget(BASE, WIDGET):
         self.placement_combo.addItem(GuiUtils.get_icon('include_endpoints.svg'), self.tr('Include Endpoints'), True)
         self.placement_combo.addItem(GuiUtils.get_icon('exclude_endpoints.svg'),self.tr('Exclude Endpoints'), False)
 
+        self.spacing_combo.addItem(self.tr('Via Count'), 0)
+        self.spacing_combo.addItem(self.tr('Via Distance'), 1)
+
         self.orientation_combo.currentIndexChanged.connect(self.on_orientation_changed)
         self.placement_combo.currentIndexChanged.connect(self.on_placement_changed)
+        self.spacing_combo.currentIndexChanged.connect(self.on_spacing_changed)
 
         self.marker_count_spin.setMinimum(2)
 
@@ -100,7 +109,12 @@ class MarkerSettingsWidget(BASE, WIDGET):
         if layer and layer.customProperty('cartography_tools/last_orientation'):
             self.orientation_combo.setCurrentIndex(self.orientation_combo.findData(float(layer.customProperty('cartography_tools/last_orientation'))))
         if layer and layer.customProperty('cartography_tools/last_placement') is not None:
-            self.placement_combo.setCurrentIndex(self.placement_combo.findData(float(layer.customProperty('cartography_tools/last_placement'))))
+            self.placement_combo.setCurrentIndex(self.placement_combo.findData(int(layer.customProperty('cartography_tools/last_placement'))))
+        if layer and layer.customProperty('cartography_tools/last_spacing') is not None:
+            self.spacing_combo.setCurrentIndex(self.spacing_combo.findData(int(layer.customProperty('cartography_tools/last_spacing'))))
+            self.on_spacing_changed()
+        if layer and layer.customProperty('cartography_tools/last_spacing_distance') is not None:
+            self.marker_distance_spin.setValue(float(layer.customProperty('cartography_tools/last_spacing_distance')))
 
         self.update_for_renderer()
         if self.layer:
@@ -182,6 +196,14 @@ class MarkerSettingsWidget(BASE, WIDGET):
                                                             self.marker_count_spin.value())
         self.count_changed.emit(self.marker_count_spin.value())
 
+    def marker_distance_changed(self):
+        if not self.field_rotation_combo.layer():
+            return
+
+        self.field_rotation_combo.layer().setCustomProperty('cartography_tools/last_spacing_distance',
+                                                            self.marker_distance_spin.value())
+        self.distance_changed.emit(self.marker_distance_spin.value())
+
     def on_orientation_changed(self):
         if not self.field_rotation_combo.layer():
             return
@@ -198,6 +220,21 @@ class MarkerSettingsWidget(BASE, WIDGET):
                                                             self.placement_combo.currentData())
         self.placement_changed.emit()
 
+    def on_spacing_changed(self):
+        if not self.field_rotation_combo.layer():
+            return
+
+        self.field_rotation_combo.layer().setCustomProperty('cartography_tools/last_spacing',
+                                                            self.spacing_combo.currentData())
+
+        self.spacing_stacked_widget.setCurrentIndex(self.spacing_combo.currentData())
+        if self.spacing_combo.currentData() == 0:
+            self.marker_count_label.setText(self.tr('Marker count'))
+            self.count_changed.emit(self.marker_count_spin.value())
+        else:
+            self.marker_count_label.setText(self.tr('Marker distance'))
+            self.distance_changed.emit(self.marker_distance_spin.value())
+
     def code_field(self):
         return self.field_code_combo.currentField()
 
@@ -213,8 +250,14 @@ class MarkerSettingsWidget(BASE, WIDGET):
     def marker_count(self):
         return self.marker_count_spin.value()
 
+    def marker_distance(self):
+        return self.marker_distance_spin.value()
+
     def orientation(self) -> float:
         return self.orientation_combo.currentData()
 
     def include_endpoints(self) -> bool:
         return self.placement_combo.currentData()
+
+    def is_fixed_distance(self) -> bool:
+        return self.spacing_combo.currentData() > 0

@@ -7,14 +7,14 @@
     <x>0</x>
     <y>0</y>
     <width>300</width>
-    <height>211</height>
+    <height>251</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="4" column="0">
+   <item row="5" column="0">
     <widget class="QLabel" name="marker_count_label">
      <property name="text">
       <string>Marker count</string>
@@ -28,14 +28,34 @@
      </property>
     </widget>
    </item>
+   <item row="4" column="1">
+    <widget class="QComboBox" name="spacing_combo"/>
+   </item>
    <item row="0" column="1">
     <widget class="QgsFieldComboBox" name="field_code_combo"/>
    </item>
    <item row="3" column="1">
     <widget class="QComboBox" name="orientation_combo"/>
    </item>
+   <item row="6" column="0">
+    <widget class="QLabel" name="placement_label">
+     <property name="text">
+      <string>Placement</string>
+     </property>
+    </widget>
+   </item>
    <item row="1" column="1">
     <widget class="QComboBox" name="code_combo"/>
+   </item>
+   <item row="6" column="1">
+    <widget class="QComboBox" name="placement_combo"/>
+   </item>
+   <item row="4" column="0">
+    <widget class="QLabel" name="spacing_label">
+     <property name="text">
+      <string>Spacing</string>
+     </property>
+    </widget>
    </item>
    <item row="2" column="1">
     <widget class="QgsFieldComboBox" name="field_rotation_combo"/>
@@ -47,14 +67,66 @@
      </property>
     </widget>
    </item>
-   <item row="4" column="1">
-    <widget class="QgsSpinBox" name="marker_count_spin"/>
-   </item>
    <item row="2" column="0">
     <widget class="QLabel" name="label_2">
      <property name="text">
       <string>Marker rotation field</string>
      </property>
+    </widget>
+   </item>
+   <item row="5" column="1">
+    <widget class="QStackedWidget" name="spacing_stacked_widget">
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <widget class="QWidget" name="page">
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QgsSpinBox" name="marker_count_spin"/>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="page_2">
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QgsDoubleSpinBox" name="marker_distance_spin">
+         <property name="decimals">
+          <number>4</number>
+         </property>
+         <property name="maximum">
+          <double>999999999.000000000000000</double>
+         </property>
+         <property name="value">
+          <double>1000.000000000000000</double>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
     </widget>
    </item>
    <item row="1" column="0">
@@ -63,16 +135,6 @@
       <string>Feature code</string>
      </property>
     </widget>
-   </item>
-   <item row="5" column="0">
-    <widget class="QLabel" name="placement_label">
-     <property name="text">
-      <string>Placement</string>
-     </property>
-    </widget>
-   </item>
-   <item row="5" column="1">
-    <widget class="QComboBox" name="placement_combo"/>
    </item>
   </layout>
  </widget>
@@ -87,13 +149,17 @@
    <extends>QSpinBox</extends>
    <header>qgis.gui</header>
   </customwidget>
+  <customwidget>
+   <class>QgsDoubleSpinBox</class>
+   <extends>QDoubleSpinBox</extends>
+   <header>qgis.gui</header>
+  </customwidget>
  </customwidgets>
  <tabstops>
   <tabstop>field_code_combo</tabstop>
   <tabstop>code_combo</tabstop>
   <tabstop>field_rotation_combo</tabstop>
   <tabstop>orientation_combo</tabstop>
-  <tabstop>marker_count_spin</tabstop>
   <tabstop>placement_combo</tabstop>
  </tabstops>
  <resources/>

@@ -113,7 +113,10 @@ class MultiPointTemplatedMarkerTool(Tool):
         self.set_line_item_symbol()
         self.line_item.set_orientation(self.widget.orientation())
         self.line_item.set_include_endpoints(self.widget.include_endpoints())
-        self.line_item.set_marker_count(self.fixed_number_points or self.widget.marker_count())
+        if not self.fixed_number_points and self.widget.is_fixed_distance():
+            self.line_item.set_marker_distance(self.widget.marker_distance())
+        else:
+            self.line_item.set_marker_count(self.fixed_number_points or self.widget.marker_count())
         self.line_item.update()
 
     def remove_line_item(self):
@@ -153,7 +156,8 @@ class MultiPointTemplatedMarkerTool(Tool):
             return
 
         res = GeometryUtils.generate_rotated_points_along_path(self.points,
-                                                               self.fixed_number_points or self.widget.marker_count(),
+                                                               point_count=self.fixed_number_points or (self.widget.marker_count() if not self.widget.is_fixed_distance() else None),
+                                                               point_distance=self.widget.marker_distance() if not self.fixed_number_points and self.widget.is_fixed_distance() else None,
                                                                orientation=-self.widget.orientation(),
                                                                include_endpoints=self.widget.include_endpoints())
         if not res:
@@ -192,13 +196,19 @@ class MultiPointTemplatedMarkerTool(Tool):
         self.widget.set_layer(self.current_layer())
 
         self.widget.count_changed.connect(self.count_changed)
+        self.widget.distance_changed.connect(self.distance_changed)
         self.widget.code_changed.connect(self.code_changed)
         self.widget.orientation_changed.connect(self.orientation_changed)
         self.widget.placement_changed.connect(self.placement_changed)
 
     def count_changed(self, count):
-        if self.line_item:
+        if self.line_item and not self.widget.is_fixed_distance():
             self.line_item.set_marker_count(count)
+            self.line_item.update()
+
+    def distance_changed(self, distance):
+        if self.line_item and self.widget.is_fixed_distance():
+            self.line_item.set_marker_distance(distance)
             self.line_item.update()
 
     def orientation_changed(self):

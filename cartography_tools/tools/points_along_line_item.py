@@ -57,6 +57,7 @@ class PointsAlongLineItem(QgsMapCanvasItem):
         self.pen.setColor(QColor(Qt.white))
 
         self.marker_count = 2
+        self.marker_distance = None
 
         self.update_rect()
         self.update()
@@ -137,16 +138,18 @@ class PointsAlongLineItem(QgsMapCanvasItem):
         painter.drawPath(line_path)
 
         if self.pixmap:
-            generated_points = GeometryUtils.generate_rotated_points_along_path(canvas_points,
-                                                                                self.marker_count,
-                                                                                self.orientation,
+            generated_points = GeometryUtils.generate_rotated_points_along_path(all_points,
+                                                                                point_count=self.marker_count,
+                                                                                point_distance=self.marker_distance,
+                                                                                orientation=self.orientation,
                                                                                 include_endpoints=self.include_endpoints)
 
             for marker_point, angle in generated_points:
+                canvas_point = self.toCanvasCoordinates(marker_point)- self.pos()
                 painter.save()
-                painter.translate(marker_point.x(),
-                                  marker_point.y())
-                painter.rotate(180-angle)
+                painter.translate(canvas_point.x(),
+                                  canvas_point.y())
+                painter.rotate(angle+(180 if self.orientation in (90,270) else 0))
                 painter.drawPixmap(-self.pixmap.width() / 2, -self.pixmap.height() / 2, self.pixmap)
                 painter.restore()
 
@@ -157,6 +160,11 @@ class PointsAlongLineItem(QgsMapCanvasItem):
 
     def set_marker_count(self, count):
         self.marker_count = count
+        self.marker_distance = None
+
+    def set_marker_distance(self, distance):
+        self.marker_count = None
+        self.marker_distance = distance
 
     def set_orientation(self, orientation: float):
         self.orientation = orientation
