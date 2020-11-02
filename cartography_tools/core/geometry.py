@@ -55,6 +55,7 @@ class GeometryUtils:
         distance = 0
         if point_count == 1:
             marker_spacing = total_length
+            distance = total_length / 2
         else:
             if include_endpoints:
                 marker_spacing = total_length / (point_count - 1)
@@ -66,7 +67,7 @@ class GeometryUtils:
 
         return_points = []
         for i in range(point_count):
-            if i == point_count - 1 and include_endpoints:
+            if point_count > 1 and i == point_count - 1 and include_endpoints:
                 distance = total_length
 
             point = line_geom.interpolate(distance).asPoint()

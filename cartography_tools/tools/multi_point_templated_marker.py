@@ -41,11 +41,18 @@ from cartography_tools.core.geometry import GeometryUtils
 class MultiPointTemplatedMarkerTool(Tool):
     ID = 'MULTI_POINT_TEMPLATED_MARKER'
 
-    def __init__(self, canvas: QgsMapCanvas, cad_dock_widget, iface, action):
+    def __init__(self, canvas: QgsMapCanvas,
+                 cad_dock_widget,
+                 iface,
+                 action,
+                 fixed_number_points: Optional[int] = None,
+                 single_segment_digitizing: bool=False):
         super().__init__(MultiPointTemplatedMarkerTool.ID, action, canvas, cad_dock_widget, iface)
 
         self.setCursor(QgsApplication.getThemeCursor(QgsApplication.Cursor.CapturePoint))
 
+        self.fixed_number_points = fixed_number_points
+        self.single_segment_digitizing=single_segment_digitizing
         self.widget = None
         self._layer = None
         self.points = []
@@ -106,7 +113,7 @@ class MultiPointTemplatedMarkerTool(Tool):
         self.set_line_item_symbol()
         self.line_item.set_orientation(self.widget.orientation())
         self.line_item.set_include_endpoints(self.widget.include_endpoints())
-        self.line_item.set_marker_count(self.widget.marker_count())
+        self.line_item.set_marker_count(self.fixed_number_points or self.widget.marker_count())
         self.line_item.update()
 
     def remove_line_item(self):
@@ -127,11 +134,14 @@ class MultiPointTemplatedMarkerTool(Tool):
             self.points.append(point)
             self.create_line_item(e.snapPoint())
             self.current_layer().triggerRepaint()
-        elif e.button() == Qt.LeftButton:
+        elif e.button() == Qt.LeftButton and not self.single_segment_digitizing:
             # subsequent left clicks -- add node to line
             self.points.append(point)
             self.line_item.add_point(e.snapPoint())
-        elif e.button() == Qt.RightButton and self.points:
+        elif self.points and (e.button() == Qt.RightButton or (e.button() == Qt.LeftButton and self.single_segment_digitizing)):
+            if e.button() == Qt.LeftButton:
+                self.points.append(point)
+
             # right click -- finish line
             self.create_features()
             self.current_layer().triggerRepaint()
@@ -142,7 +152,9 @@ class MultiPointTemplatedMarkerTool(Tool):
         if not self.current_layer():
             return
 
-        res = GeometryUtils.generate_rotated_points_along_path(self.points, self.widget.marker_count(), orientation=-self.widget.orientation(),
+        res = GeometryUtils.generate_rotated_points_along_path(self.points,
+                                                               self.fixed_number_points or self.widget.marker_count(),
+                                                               orientation=-self.widget.orientation(),
                                                                include_endpoints=self.widget.include_endpoints())
         if not res:
             return
@@ -173,7 +185,9 @@ class MultiPointTemplatedMarkerTool(Tool):
     def create_widget(self):
         self.delete_widget()
 
-        self.widget = MarkerSettingsWidget(show_marker_count=True, show_orientation=True, show_placement=True)
+        self.widget = MarkerSettingsWidget(show_marker_count=self.fixed_number_points is None,
+                                           show_orientation=True,
+                                           show_placement=self.fixed_number_points is None)
         self.set_user_input_widget(self.widget)
         self.widget.set_layer(self.current_layer())
 
@@ -225,3 +239,15 @@ class MultiPointTemplatedMarkerTool(Tool):
         if self._layer is not None and not sip.isdeleted(self._layer):
             return self._layer
         return None
+
+
+class TwoPointTemplatedMarkerTool(MultiPointTemplatedMarkerTool):
+    ID = 'TWO_POINT_TEMPLATED_MARKER'
+
+    def __init__(self, canvas: QgsMapCanvas, cad_dock_widget, iface, action):
+        super().__init__(canvas=canvas,
+                         cad_dock_widget=cad_dock_widget,
+                         iface=iface,
+                         action=action,
+                         fixed_number_points=1,
+                         single_segment_digitizing=True)

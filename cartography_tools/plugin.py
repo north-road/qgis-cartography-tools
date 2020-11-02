@@ -37,7 +37,10 @@ from qgis.gui import QgisInterface
 from cartography_tools.processing.provider import CartographyToolsProvider
 from cartography_tools.gui.gui_utils import GuiUtils
 from cartography_tools.tools.single_point_templated_marker import SinglePointTemplatedMarkerTool
-from cartography_tools.tools.multi_point_templated_marker import MultiPointTemplatedMarkerTool
+from cartography_tools.tools.multi_point_templated_marker import (
+    MultiPointTemplatedMarkerTool,
+    TwoPointTemplatedMarkerTool
+)
 
 
 VERSION = '1.0.0'
@@ -137,6 +140,23 @@ class CartographyToolsPlugin:
         self.actions.append(action_single_point_templated_marker)
 
         self.get_map_tool_action_group().addAction(action_single_point_templated_marker)
+
+
+        # single point at center of line tool
+
+        action_single_point_at_center_of_line = QAction(GuiUtils.get_icon(
+            'marker_at_center_of_line.svg'), self.tr('Single Point Templated Marker Via Two Points'))
+        action_single_point_at_center_of_line.setCheckable(True)
+        self.tools[TwoPointTemplatedMarkerTool.ID] = TwoPointTemplatedMarkerTool(self.iface.mapCanvas(),
+                                                                                       self.iface.cadDockWidget(),
+                                                                                       self.iface,
+                                                                                       action_single_point_at_center_of_line)
+        self.tools[TwoPointTemplatedMarkerTool.ID].setAction(action_single_point_at_center_of_line)
+        action_single_point_at_center_of_line.triggered.connect(partial(
+            self.switch_tool, TwoPointTemplatedMarkerTool.ID))
+        action_single_point_at_center_of_line.setData(TwoPointTemplatedMarkerTool.ID)
+        self.toolbar.addAction(action_single_point_at_center_of_line)
+        self.actions.append(action_single_point_at_center_of_line)
 
 
         # multi point tool
