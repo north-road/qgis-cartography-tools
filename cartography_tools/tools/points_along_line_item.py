@@ -42,6 +42,7 @@ class PointsAlongLineItem(QgsMapCanvasItem):
         self.canvas = canvas
 
         self.orientation = 0
+        self.include_endpoints = True
         self.pixmap = QPixmap()
 
         im = QImage(24, 24, QImage.Format_ARGB32)
@@ -136,7 +137,10 @@ class PointsAlongLineItem(QgsMapCanvasItem):
         painter.drawPath(line_path)
 
         if self.pixmap:
-            generated_points = GeometryUtils.generate_rotated_points_along_path(canvas_points, self.marker_count, self.orientation)
+            generated_points = GeometryUtils.generate_rotated_points_along_path(canvas_points,
+                                                                                self.marker_count,
+                                                                                self.orientation,
+                                                                                include_endpoints=self.include_endpoints)
 
             for marker_point, angle in generated_points:
                 painter.save()
@@ -156,3 +160,6 @@ class PointsAlongLineItem(QgsMapCanvasItem):
 
     def set_orientation(self, orientation: float):
         self.orientation = orientation
+
+    def set_include_endpoints(self, include_endpoints: bool):
+        self.include_endpoints = include_endpoints

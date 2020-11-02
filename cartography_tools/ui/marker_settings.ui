@@ -6,14 +6,21 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>263</width>
-    <height>170</height>
+    <width>300</width>
+    <height>211</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
+   <item row="4" column="0">
+    <widget class="QLabel" name="marker_count_label">
+     <property name="text">
+      <string>Marker count</string>
+     </property>
+    </widget>
+   </item>
    <item row="0" column="0">
     <widget class="QLabel" name="label">
      <property name="text">
@@ -21,18 +28,27 @@
      </property>
     </widget>
    </item>
-   <item row="3" column="1">
-    <widget class="QgsSpinBox" name="marker_count_spin"/>
-   </item>
    <item row="0" column="1">
     <widget class="QgsFieldComboBox" name="field_code_combo"/>
    </item>
+   <item row="3" column="1">
+    <widget class="QComboBox" name="orientation_combo"/>
+   </item>
+   <item row="1" column="1">
+    <widget class="QComboBox" name="code_combo"/>
+   </item>
+   <item row="2" column="1">
+    <widget class="QgsFieldComboBox" name="field_rotation_combo"/>
+   </item>
    <item row="3" column="0">
-    <widget class="QLabel" name="marker_count_label">
+    <widget class="QLabel" name="orientation_label">
      <property name="text">
-      <string>Marker count</string>
+      <string>Orientation</string>
      </property>
     </widget>
+   </item>
+   <item row="4" column="1">
+    <widget class="QgsSpinBox" name="marker_count_spin"/>
    </item>
    <item row="2" column="0">
     <widget class="QLabel" name="label_2">
@@ -41,12 +57,6 @@
      </property>
     </widget>
    </item>
-   <item row="2" column="1">
-    <widget class="QgsFieldComboBox" name="field_rotation_combo"/>
-   </item>
-   <item row="1" column="1">
-    <widget class="QComboBox" name="code_combo"/>
-   </item>
    <item row="1" column="0">
     <widget class="QLabel" name="label_3">
      <property name="text">
@@ -54,15 +64,15 @@
      </property>
     </widget>
    </item>
-   <item row="4" column="0">
-    <widget class="QLabel" name="orientation_label">
+   <item row="5" column="0">
+    <widget class="QLabel" name="placement_label">
      <property name="text">
-      <string>Orientation</string>
+      <string>Placement</string>
      </property>
     </widget>
    </item>
-   <item row="4" column="1">
-    <widget class="QComboBox" name="orientation_combo"/>
+   <item row="5" column="1">
+    <widget class="QComboBox" name="placement_combo"/>
    </item>
   </layout>
  </widget>
@@ -78,6 +88,14 @@
    <header>qgis.gui</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>field_code_combo</tabstop>
+  <tabstop>code_combo</tabstop>
+  <tabstop>field_rotation_combo</tabstop>
+  <tabstop>orientation_combo</tabstop>
+  <tabstop>marker_count_spin</tabstop>
+  <tabstop>placement_combo</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

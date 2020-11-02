@@ -29,8 +29,9 @@ class MarkerSettingsWidget(BASE, WIDGET):
     count_changed = pyqtSignal(int)
     code_changed = pyqtSignal()
     orientation_changed = pyqtSignal()
+    placement_changed = pyqtSignal()
 
-    def __init__(self, show_marker_count=False, show_orientation=False, parent=None):
+    def __init__(self, show_marker_count=False, show_orientation=False, show_placement=False, parent=None):
         super(MarkerSettingsWidget, self).__init__(parent)
         self.setupUi(self)
 
@@ -56,13 +57,20 @@ class MarkerSettingsWidget(BASE, WIDGET):
         if not show_orientation:
             self.orientation_label.setVisible(False)
             self.orientation_combo.setVisible(False)
+        if not show_placement:
+            self.placement_label.setVisible(False)
+            self.placement_combo.setVisible(False)
 
         self.orientation_combo.addItem("0°", 0.0)
         self.orientation_combo.addItem("90°", 90.0)
         self.orientation_combo.addItem("180°", 180.0)
         self.orientation_combo.addItem("270°", 270.0)
 
+        self.placement_combo.addItem(GuiUtils.get_icon('include_endpoints.svg'), self.tr('Include Endpoints'), True)
+        self.placement_combo.addItem(GuiUtils.get_icon('exclude_endpoints.svg'),self.tr('Exclude Endpoints'), False)
+
         self.orientation_combo.currentIndexChanged.connect(self.on_orientation_changed)
+        self.placement_combo.currentIndexChanged.connect(self.on_placement_changed)
 
         self.marker_count_spin.setMinimum(2)
 
@@ -91,6 +99,8 @@ class MarkerSettingsWidget(BASE, WIDGET):
             self.marker_count_spin.setValue(int(layer.customProperty('cartography_tools/last_marker_count')))
         if layer and layer.customProperty('cartography_tools/last_orientation'):
             self.orientation_combo.setCurrentIndex(self.orientation_combo.findData(float(layer.customProperty('cartography_tools/last_orientation'))))
+        if layer and layer.customProperty('cartography_tools/last_placement') is not None:
+            self.placement_combo.setCurrentIndex(self.placement_combo.findData(float(layer.customProperty('cartography_tools/last_placement'))))
 
         self.update_for_renderer()
         if self.layer:
@@ -180,6 +190,14 @@ class MarkerSettingsWidget(BASE, WIDGET):
                                                             self.orientation_combo.currentData())
         self.orientation_changed.emit()
 
+    def on_placement_changed(self):
+        if not self.field_rotation_combo.layer():
+            return
+
+        self.field_rotation_combo.layer().setCustomProperty('cartography_tools/last_placement',
+                                                            self.placement_combo.currentData())
+        self.placement_changed.emit()
+
     def code_field(self):
         return self.field_code_combo.currentField()
 
@@ -197,3 +215,6 @@ class MarkerSettingsWidget(BASE, WIDGET):
 
     def orientation(self) -> float:
         return self.orientation_combo.currentData()
+
+    def include_endpoints(self) -> bool:
+        return self.placement_combo.currentData()

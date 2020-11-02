@@ -29,7 +29,7 @@ class GeometryUtils:
     """
 
     @staticmethod
-    def generate_rotated_points_along_path(points: List[QgsPointXY], point_count: int, orientation: float = 0) -> List[
+    def generate_rotated_points_along_path(points: List[QgsPointXY], point_count: int, orientation: float = 0, include_endpoints: bool = True) -> List[
         Tuple[QgsPointXY, float]]:
         """
         Generates a list of rotated points along a path defined by a list of QgsPointXY objects
@@ -56,13 +56,17 @@ class GeometryUtils:
         if point_count == 1:
             marker_spacing = total_length
         else:
-            marker_spacing = total_length / (point_count - 1)
+            if include_endpoints:
+                marker_spacing = total_length / (point_count - 1)
+            else:
+                marker_spacing = total_length / (point_count + 1)
+                distance = marker_spacing
 
         line_geom = QgsGeometry.fromPolylineXY(points)
 
         return_points = []
         for i in range(point_count):
-            if i == point_count -1:
+            if i == point_count - 1 and include_endpoints:
                 distance = total_length
 
             point = line_geom.interpolate(distance).asPoint()
