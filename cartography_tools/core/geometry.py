@@ -70,8 +70,8 @@ class GeometryUtils:
             if include_endpoints:
                 marker_spacing = total_length / (point_count - 1)
             else:
-                marker_spacing = total_length / (point_count + 1)
-                distance = marker_spacing
+                marker_spacing = total_length / point_count
+                distance = marker_spacing / 2
 
         line_geom = QgsGeometry.fromPolylineXY(points)
 
