@@ -233,6 +233,7 @@ class MultiPointTemplatedMarkerTool(Tool):
 
     def deactivate(self):
         super().deactivate()
+        self.points = []
         self.delete_widget()
         self.remove_line_item()
 

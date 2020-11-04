@@ -127,13 +127,14 @@ class MarkerSettingsWidget(BASE, WIDGET):
             layer.rendererChanged.connect(self.update_for_renderer)
 
         # try to restore code value correctly
-        self.set_code_value(prev_code)
+        if prev_code:
+            self.set_code_value(prev_code)
 
     def set_code_value(self, value):
         index = -1
 
         for i in range(self.code_combo.count()):
-            if self.code_combo.itemText(i) == value:
+            if self.code_combo.itemData(i) == value:
                 index = i
                 break
 
@@ -245,10 +246,13 @@ class MarkerSettingsWidget(BASE, WIDGET):
         return self.field_code_combo.currentField()
 
     def code_value(self):
-        if self.code_combo.itemText(self.code_combo.currentIndex()) == self.code_combo.currentText():
-            return self.code_combo.currentData() or self.code_combo.currentText()
+        text = self.code_combo.currentText()
+
+        for i in range(self.code_combo.count()):
+            if self.code_combo.itemText(i) == text:
+                return self.code_combo.itemData(i) or text
         else:
-            return self.code_combo.currentText()
+            return text
 
     def rotation_field(self):
         return self.field_rotation_combo.currentField()
