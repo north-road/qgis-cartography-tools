@@ -239,7 +239,7 @@ class MarkerSettingsWidget(BASE, WIDGET):
             self.marker_count_label.setText(self.tr('Marker count'))
             self.count_changed.emit(self.marker_count_spin.value())
         else:
-            self.marker_count_label.setText(self.tr('Maximum spacing'))
+            self.marker_count_label.setText(self.tr('Minimum spacing'))
             self.distance_changed.emit(self.marker_distance_spin.value())
 
     def code_field(self):
