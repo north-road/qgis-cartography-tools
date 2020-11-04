@@ -59,23 +59,19 @@ class GeometryUtils:
             return []
 
         distance = 0
-        if point_count is not None:
-            if point_count == 1:
-                marker_spacing = total_length
-                distance = total_length / 2
-            else:
-                if include_endpoints:
-                    marker_spacing = total_length / (point_count - 1)
-                else:
-                    marker_spacing = total_length / (point_count + 1)
-                    distance = marker_spacing
+
+        if point_distance is not None:
+            point_count = math.ceil((total_length / point_distance) + 1)
+
+        if point_count == 1:
+            marker_spacing = total_length
+            distance = total_length / 2
         else:
-            marker_spacing = point_distance
-            if not include_endpoints:
-                distance = marker_spacing
-                point_count = math.ceil((total_length / marker_spacing)-1)
+            if include_endpoints:
+                marker_spacing = total_length / (point_count - 1)
             else:
-                point_count = math.ceil((total_length / marker_spacing)+1)
+                marker_spacing = total_length / (point_count + 1)
+                distance = marker_spacing
 
         line_geom = QgsGeometry.fromPolylineXY(points)
 
