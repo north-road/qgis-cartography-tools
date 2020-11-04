@@ -109,9 +109,15 @@ class MarkerSettingsWidget(BASE, WIDGET):
         if layer and layer.customProperty('cartography_tools/last_orientation'):
             self.orientation_combo.setCurrentIndex(self.orientation_combo.findData(float(layer.customProperty('cartography_tools/last_orientation'))))
         if layer and layer.customProperty('cartography_tools/last_placement') is not None:
-            self.placement_combo.setCurrentIndex(self.placement_combo.findData(int(layer.customProperty('cartography_tools/last_placement'))))
+            try:
+                self.placement_combo.setCurrentIndex(self.placement_combo.findData(int(layer.customProperty('cartography_tools/last_placement'))))
+            except ValueError:
+                pass
         if layer and layer.customProperty('cartography_tools/last_spacing') is not None:
-            self.spacing_combo.setCurrentIndex(self.spacing_combo.findData(int(layer.customProperty('cartography_tools/last_spacing'))))
+            try:
+                self.spacing_combo.setCurrentIndex(self.spacing_combo.findData(int(layer.customProperty('cartography_tools/last_spacing'))))
+            except ValueError:
+                pass
             self.on_spacing_changed()
         if layer and layer.customProperty('cartography_tools/last_spacing_distance') is not None:
             self.marker_distance_spin.setValue(float(layer.customProperty('cartography_tools/last_spacing_distance')))
