@@ -61,7 +61,10 @@ class GeometryUtils:
         distance = 0
 
         if point_distance is not None:
-            point_count = math.floor((total_length / point_distance) + 1)
+            point_count = math.floor(total_length / point_distance) + (1 if include_endpoints else 0)
+
+        if point_count == 0:
+            return []
 
         if point_count == 1:
             marker_spacing = total_length
