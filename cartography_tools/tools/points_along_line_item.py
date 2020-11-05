@@ -7,9 +7,10 @@ the Free Software Foundation; either version 2 of the License, or
 (at your option) any later version.
 """
 
+from typing import Optional
+
 from qgis.PyQt.QtCore import (
-    Qt,
-    QSizeF
+    Qt
 )
 from qgis.PyQt.QtGui import (
     QImage,
@@ -17,8 +18,7 @@ from qgis.PyQt.QtGui import (
     QColor,
     QPainter,
     QPen,
-    QPainterPath,
-    QFont
+    QPainterPath
 )
 from qgis.core import (
     QgsRectangle,
@@ -36,7 +36,7 @@ class PointsAlongLineItem(QgsMapCanvasItem):
     A map canvas item which shows a linestring with equally spaced marker points
     """
 
-    def __init__(self, canvas, start_point):
+    def __init__(self, canvas, start_point: Optional[QgsPointXY]):
         super().__init__(canvas)
 
         self.canvas = canvas
@@ -49,8 +49,12 @@ class PointsAlongLineItem(QgsMapCanvasItem):
         im.fill(Qt.transparent)
         self.set_symbol(im)
 
-        self.points = [start_point]
+        if start_point is not None:
+            self.points = [start_point]
+        else:
+            self.points = []
         self.hover_point = None
+        self.segment_start_point = None
 
         self.pen = QPen()
         self.pen.setWidth(GuiUtils.scale_icon_size(4))
@@ -62,18 +66,23 @@ class PointsAlongLineItem(QgsMapCanvasItem):
         self.update_rect()
         self.update()
 
-    def set_hover_point(self, point):
+    def set_segment_start(self, point: QgsPointXY):
+        self.segment_start_point = point
+        self.update_rect()
+        self.update()
+
+    def set_hover_point(self, point: QgsPointXY):
         self.hover_point = point
         self.update_rect()
         self.update()
 
-    def add_point(self, point):
+    def add_point(self, point: QgsPointXY):
         self.points.append(point)
         self.update_rect()
         self.update()
 
     def update_rect(self):
-        if not self.points:
+        if not self.points and self.segment_start_point is None:
             self.setVisible(False)
             return
 
@@ -81,7 +90,8 @@ class PointsAlongLineItem(QgsMapCanvasItem):
 
         width = self.pen.width() + (self.pixmap.width() / 2 if self.pixmap else 0)
 
-        all_points = self.points + ([self.hover_point] if self.hover_point else [])
+        all_points = self.points + ([self.hover_point] if self.hover_point else []) + (
+            [self.segment_start_point] if self.segment_start_point else [])
 
         r = QgsRectangle()
 
@@ -106,16 +116,41 @@ class PointsAlongLineItem(QgsMapCanvasItem):
         self.update_rect()
 
     def paint(self, painter, option, widget):
-        if not painter or not self.points:
+        if not painter:
             return
 
-        all_points = self.points + ([self.hover_point] if self.hover_point else [])
-        all_points = Utils.unique_ordered_list(all_points)
-        if len(all_points) < 2:
-            return
+        all_points = self.points[:]
+        if self.hover_point and self.segment_start_point is None:
+            all_points += [self.hover_point]
 
         painter.save()
         painter.setRenderHint(QPainter.Antialiasing, True)
+
+        if self.segment_start_point is not None and self.hover_point is not None:
+            segment_points = [QgsPointXY(self.toCanvasCoordinates(p) - self.pos()) for p in
+                              [self.segment_start_point, self.hover_point]]
+            segment_path = QPainterPath()
+            segment_path.moveTo(segment_points[0].x(), segment_points[0].y())
+            segment_path.lineTo(segment_points[1].x(), segment_points[1].y())
+            pen = QPen()
+            pen.setWidth(GuiUtils.scale_icon_size(4))
+            pen.setColor(QColor(255, 255, 255, 100))
+            pen.setStyle(Qt.DotLine)
+            painter.setPen(pen)
+            painter.drawPath(segment_path)
+            pen.setWidth(GuiUtils.scale_icon_size(1))
+            pen.setColor(QColor(0, 0, 255, 255))
+            painter.setPen(pen)
+            painter.drawPath(segment_path)
+
+            if all_points:
+                all_points.append(QgsPointXY(0.5 * (self.segment_start_point.x() + self.hover_point.x()),
+                                             0.5 * (self.segment_start_point.y() + self.hover_point.y())))
+
+        all_points = Utils.unique_ordered_list(all_points)
+        if len(all_points) < 2:
+            painter.restore()
+            return
 
         canvas_points = [QgsPointXY(self.toCanvasCoordinates(p) - self.pos()) for p in all_points]
 
@@ -145,11 +180,11 @@ class PointsAlongLineItem(QgsMapCanvasItem):
                                                                                 include_endpoints=self.include_endpoints)
 
             for marker_point, angle in generated_points:
-                canvas_point = self.toCanvasCoordinates(marker_point)- self.pos()
+                canvas_point = self.toCanvasCoordinates(marker_point) - self.pos()
                 painter.save()
                 painter.translate(canvas_point.x(),
                                   canvas_point.y())
-                painter.rotate(angle+(180 if self.orientation in (90,270) else 0))
+                painter.rotate(angle + (180 if self.orientation in (90, 270) else 0))
                 painter.drawPixmap(-self.pixmap.width() / 2, -self.pixmap.height() / 2, self.pixmap)
                 painter.restore()
 

@@ -10,7 +10,6 @@ from typing import Optional
 
 from qgis.PyQt import sip
 from qgis.PyQt.QtCore import Qt
-
 from qgis.core import (
     QgsVectorLayer,
     QgsMapLayer,
@@ -23,19 +22,19 @@ from qgis.core import (
     QgsExpressionContextUtils,
     QgsProperty,
     QgsApplication,
-    NULL,
-    QgsSymbol
+    QgsSymbol,
+    QgsPoint
 )
 from qgis.gui import (
     QgsMapCanvas,
     QgsMapMouseEvent
 )
 
+from cartography_tools.core.geometry import GeometryUtils
+from cartography_tools.gui.gui_utils import GuiUtils
 from cartography_tools.tools.map_tool import Tool
 from cartography_tools.tools.marker_settings_widget import MarkerSettingsWidget
 from cartography_tools.tools.points_along_line_item import PointsAlongLineItem
-from cartography_tools.gui.gui_utils import GuiUtils
-from cartography_tools.core.geometry import GeometryUtils
 
 
 class MultiPointTemplatedMarkerTool(Tool):
@@ -46,17 +45,20 @@ class MultiPointTemplatedMarkerTool(Tool):
                  iface,
                  action,
                  fixed_number_points: Optional[int] = None,
-                 single_segment_digitizing: bool=False):
+                 single_segment_digitizing: bool = False,
+                 line_segment_center_mode: bool = False):
         super().__init__(MultiPointTemplatedMarkerTool.ID, action, canvas, cad_dock_widget, iface)
 
         self.setCursor(QgsApplication.getThemeCursor(QgsApplication.Cursor.CapturePoint))
 
         self.fixed_number_points = fixed_number_points
-        self.single_segment_digitizing=single_segment_digitizing
+        self.single_segment_digitizing = single_segment_digitizing
+        self.line_segment_center_mode = line_segment_center_mode
         self.widget = None
         self._layer = None
         self.points = []
         self.line_item = None
+        self.line_segment_start = None
 
     def create_point_feature(self, point: Optional[QgsPointXY] = None, angle: Optional[float] = None) -> QgsFeature:
         f = QgsFeature(self.current_layer().fields())
@@ -75,7 +77,7 @@ class MultiPointTemplatedMarkerTool(Tool):
     def cadCanvasMoveEvent(self, event):  # pylint: disable=missing-docstring
         self.snap_indicator.setMatch(event.mapPointMatch())
 
-        if self.points and self.line_item:
+        if (self.points or self.line_segment_start is not None) and self.line_item:
             # update preview line item
             self.line_item.set_hover_point(event.snapPoint())
             self.line_item.update()
@@ -108,7 +110,7 @@ class MultiPointTemplatedMarkerTool(Tool):
         self.line_item.set_symbol(symbol_image)
         self.line_item.update()
 
-    def create_line_item(self, map_point: QgsPointXY):
+    def create_line_item(self, map_point: Optional[QgsPointXY]):
         self.line_item = PointsAlongLineItem(self.canvas(), map_point)
         self.set_line_item_symbol()
         self.line_item.set_orientation(self.widget.orientation())
@@ -133,22 +135,61 @@ class MultiPointTemplatedMarkerTool(Tool):
 
         point = self.toLayerCoordinates(self.current_layer(), e.snapPoint())
         if not self.points and e.button() == Qt.LeftButton:
-            # first point -- create the preview item
-            self.points.append(point)
-            self.create_line_item(e.snapPoint())
-            self.current_layer().triggerRepaint()
+            if self.line_segment_center_mode:
+                if self.line_segment_start is None:
+                    # first click = start segment
+                    self.line_segment_start = point
+                    self.create_line_item(None)
+                    self.line_item.set_segment_start(e.snapPoint())
+                else:
+                    # second click = end segment
+                    mid_point = QgsPointXY(0.5 * (self.line_segment_start.x() + point.x()),
+                                           0.5 * (self.line_segment_start.y() + point.y()))
+                    self.points.append(mid_point)
+
+                    canvas_mid_point = self.toMapCoordinatesV2(self.current_layer(), QgsPoint(mid_point))
+                    self.line_item.add_point(QgsPointXY(canvas_mid_point))
+                    self.line_item.set_segment_start(None)
+                    self.line_segment_start = None
+                    self.current_layer().triggerRepaint()
+            else:
+                # first point -- create the preview item
+                self.points.append(point)
+                self.create_line_item(e.snapPoint())
+                self.current_layer().triggerRepaint()
         elif e.button() == Qt.LeftButton and not self.single_segment_digitizing:
             # subsequent left clicks -- add node to line
-            self.points.append(point)
-            self.line_item.add_point(e.snapPoint())
-        elif self.points and (e.button() == Qt.RightButton or (e.button() == Qt.LeftButton and self.single_segment_digitizing)):
+            if self.line_segment_center_mode:
+                if self.line_segment_start is None:
+                    # start new segment
+                    self.line_segment_start = point
+                    self.line_item.set_segment_start(e.snapPoint())
+                else:
+                    # end segment
+                    mid_point = QgsPointXY(0.5 * (self.line_segment_start.x() + point.x()),
+                                           0.5 * (self.line_segment_start.y() + point.y()))
+                    self.points.append(mid_point)
+                    canvas_mid_point = self.toMapCoordinatesV2(self.current_layer(), QgsPoint(mid_point))
+                    self.line_item.add_point(QgsPointXY(canvas_mid_point))
+                    self.line_segment_start = None
+                    self.line_item.set_segment_start(None)
+            else:
+                self.points.append(point)
+                self.line_item.add_point(e.snapPoint())
+        elif (self.points or self.line_segment_start is not None) and (
+                e.button() == Qt.RightButton or (e.button() == Qt.LeftButton and self.single_segment_digitizing)):
             if e.button() == Qt.LeftButton:
                 self.points.append(point)
+
+            elif e.button() == Qt.RightButton and self.line_segment_start is not None:
+                # right click while drawing a segment = just take start of segment
+                self.points.append(self.line_segment_start)
 
             # right click -- finish line
             self.create_features()
             self.current_layer().triggerRepaint()
             self.points = []
+            self.line_segment_start = None
             self.remove_line_item()
 
     def create_features(self):
@@ -156,7 +197,8 @@ class MultiPointTemplatedMarkerTool(Tool):
             return
 
         res = GeometryUtils.generate_rotated_points_along_path(self.points,
-                                                               point_count=self.fixed_number_points or (self.widget.marker_count() if not self.widget.is_fixed_distance() else None),
+                                                               point_count=self.fixed_number_points or (
+                                                                   self.widget.marker_count() if not self.widget.is_fixed_distance() else None),
                                                                point_distance=self.widget.marker_distance() if not self.fixed_number_points and self.widget.is_fixed_distance() else None,
                                                                orientation=-self.widget.orientation(),
                                                                include_endpoints=self.widget.include_endpoints())
@@ -262,3 +304,14 @@ class TwoPointTemplatedMarkerTool(MultiPointTemplatedMarkerTool):
                          action=action,
                          fixed_number_points=1,
                          single_segment_digitizing=True)
+
+
+class MultiPointSegmentCenterTemplatedMarkerTool(MultiPointTemplatedMarkerTool):
+    ID = 'MULTI_POINT_CENTER_SEGMENT_TEMPLATED_MARKER'
+
+    def __init__(self, canvas: QgsMapCanvas, cad_dock_widget, iface, action):
+        super().__init__(canvas=canvas,
+                         cad_dock_widget=cad_dock_widget,
+                         iface=iface,
+                         action=action,
+                         line_segment_center_mode=True)

@@ -39,7 +39,8 @@ from cartography_tools.gui.gui_utils import GuiUtils
 from cartography_tools.tools.single_point_templated_marker import SinglePointTemplatedMarkerTool
 from cartography_tools.tools.multi_point_templated_marker import (
     MultiPointTemplatedMarkerTool,
-    TwoPointTemplatedMarkerTool
+    TwoPointTemplatedMarkerTool,
+    MultiPointSegmentCenterTemplatedMarkerTool
 )
 
 
@@ -158,6 +159,8 @@ class CartographyToolsPlugin:
         self.toolbar.addAction(action_single_point_at_center_of_line)
         self.actions.append(action_single_point_at_center_of_line)
 
+        self.get_map_tool_action_group().addAction(action_single_point_at_center_of_line)
+
 
         # multi point tool
 
@@ -174,6 +177,24 @@ class CartographyToolsPlugin:
         action_multi_point_templated_marker.setData(MultiPointTemplatedMarkerTool.ID)
         self.toolbar.addAction(action_multi_point_templated_marker)
         self.actions.append(action_multi_point_templated_marker)
+
+        self.get_map_tool_action_group().addAction(action_single_point_templated_marker)
+
+        # multi at center of segment point tool
+
+        action_multi_point_center_segment_templated_marker = QAction(GuiUtils.get_icon(
+            'multi_point_templated_marker_at_center.svg'), self.tr('Multiple Point Templated Marker At Center Of Segments'))
+        action_multi_point_center_segment_templated_marker.setCheckable(True)
+        self.tools[MultiPointSegmentCenterTemplatedMarkerTool.ID] = MultiPointSegmentCenterTemplatedMarkerTool(self.iface.mapCanvas(),
+                                                                                       self.iface.cadDockWidget(),
+                                                                                       self.iface,
+                                                                                       action_multi_point_center_segment_templated_marker)
+        self.tools[MultiPointSegmentCenterTemplatedMarkerTool.ID].setAction(action_multi_point_center_segment_templated_marker)
+        action_multi_point_center_segment_templated_marker.triggered.connect(partial(
+            self.switch_tool, MultiPointSegmentCenterTemplatedMarkerTool.ID))
+        action_multi_point_center_segment_templated_marker.setData(MultiPointSegmentCenterTemplatedMarkerTool.ID)
+        self.toolbar.addAction(action_multi_point_center_segment_templated_marker)
+        self.actions.append(action_multi_point_center_segment_templated_marker)
 
         self.get_map_tool_action_group().addAction(action_single_point_templated_marker)
 
