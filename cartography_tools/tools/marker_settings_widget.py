@@ -25,7 +25,6 @@ WIDGET, BASE = uic.loadUiType(
 
 
 class MarkerSettingsWidget(BASE, WIDGET):
-
     count_changed = pyqtSignal(int)
     distance_changed = pyqtSignal(float)
     code_changed = pyqtSignal()
@@ -72,7 +71,7 @@ class MarkerSettingsWidget(BASE, WIDGET):
         self.orientation_combo.addItem("270°", 270.0)
 
         self.placement_combo.addItem(GuiUtils.get_icon('include_endpoints.svg'), self.tr('Include Endpoints'), True)
-        self.placement_combo.addItem(GuiUtils.get_icon('exclude_endpoints.svg'),self.tr('Exclude Endpoints'), False)
+        self.placement_combo.addItem(GuiUtils.get_icon('exclude_endpoints.svg'), self.tr('Exclude Endpoints'), False)
 
         self.spacing_combo.addItem(self.tr('Via Count'), 0)
         self.spacing_combo.addItem(self.tr('Via Distance'), 1)
@@ -107,15 +106,18 @@ class MarkerSettingsWidget(BASE, WIDGET):
         if layer and layer.customProperty('cartography_tools/last_marker_count'):
             self.marker_count_spin.setValue(int(layer.customProperty('cartography_tools/last_marker_count')))
         if layer and layer.customProperty('cartography_tools/last_orientation'):
-            self.orientation_combo.setCurrentIndex(self.orientation_combo.findData(float(layer.customProperty('cartography_tools/last_orientation'))))
+            self.orientation_combo.setCurrentIndex(
+                self.orientation_combo.findData(float(layer.customProperty('cartography_tools/last_orientation'))))
         if layer and layer.customProperty('cartography_tools/last_placement') is not None:
             try:
-                self.placement_combo.setCurrentIndex(self.placement_combo.findData(int(layer.customProperty('cartography_tools/last_placement'))))
+                self.placement_combo.setCurrentIndex(
+                    self.placement_combo.findData(int(layer.customProperty('cartography_tools/last_placement'))))
             except ValueError:
                 pass
         if layer and layer.customProperty('cartography_tools/last_spacing') is not None:
             try:
-                self.spacing_combo.setCurrentIndex(self.spacing_combo.findData(int(layer.customProperty('cartography_tools/last_spacing'))))
+                self.spacing_combo.setCurrentIndex(
+                    self.spacing_combo.findData(int(layer.customProperty('cartography_tools/last_spacing'))))
             except ValueError:
                 pass
             self.on_spacing_changed()

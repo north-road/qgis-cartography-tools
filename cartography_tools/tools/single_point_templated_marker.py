@@ -10,7 +10,6 @@ from typing import Optional
 
 from qgis.PyQt import sip
 from qgis.PyQt.QtCore import Qt
-
 from qgis.core import (
     QgsVectorLayer,
     QgsMapLayer,
@@ -31,10 +30,10 @@ from qgis.gui import (
     QgsMapMouseEvent
 )
 
+from cartography_tools.gui.gui_utils import GuiUtils
 from cartography_tools.tools.map_tool import Tool
 from cartography_tools.tools.marker_settings_widget import MarkerSettingsWidget
 from cartography_tools.tools.point_rotation_item import PointRotationItem
-from cartography_tools.gui.gui_utils import GuiUtils
 
 
 class SinglePointTemplatedMarkerTool(Tool):

@@ -13,7 +13,6 @@ from qgis.PyQt.QtCore import (
     Qt,
     QTimer
 )
-
 from qgis.core import QgsMapLayer
 from qgis.gui import (
     QgsMapToolAdvancedDigitizing,
@@ -54,6 +53,3 @@ class Tool(QgsMapToolAdvancedDigitizing):
 
         # add the user input widget only after the end of the current event loop
         QTimer.singleShot(1, partial(_deferred_set_user_input_widget, widget))
-
-
-

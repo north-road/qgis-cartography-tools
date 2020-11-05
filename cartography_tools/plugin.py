@@ -25,24 +25,21 @@ from qgis.PyQt.QtWidgets import (
     QAction,
     QActionGroup
 )
-
 from qgis.core import (
     QgsApplication,
-    QgsMapLayerType,
     QgsMapLayer,
     QgsVectorLayer
 )
 from qgis.gui import QgisInterface
 
-from cartography_tools.processing.provider import CartographyToolsProvider
 from cartography_tools.gui.gui_utils import GuiUtils
-from cartography_tools.tools.single_point_templated_marker import SinglePointTemplatedMarkerTool
+from cartography_tools.processing.provider import CartographyToolsProvider
 from cartography_tools.tools.multi_point_templated_marker import (
     MultiPointTemplatedMarkerTool,
     TwoPointTemplatedMarkerTool,
     MultiPointSegmentCenterTemplatedMarkerTool
 )
-
+from cartography_tools.tools.single_point_templated_marker import SinglePointTemplatedMarkerTool
 
 VERSION = '1.0.0'
 
@@ -120,7 +117,8 @@ class CartographyToolsPlugin:
         try:
             return self.iface.mapToolActionGroup()
         except AttributeError:
-            return [o for o in self.iface.mainWindow().findChildren(QActionGroup) if self.iface.actionPan() in o.actions()][0]
+            return \
+            [o for o in self.iface.mainWindow().findChildren(QActionGroup) if self.iface.actionPan() in o.actions()][0]
 
     def create_tools(self):
         """
@@ -142,16 +140,15 @@ class CartographyToolsPlugin:
 
         self.get_map_tool_action_group().addAction(action_single_point_templated_marker)
 
-
         # single point at center of line tool
 
         action_single_point_at_center_of_line = QAction(GuiUtils.get_icon(
             'marker_at_center_of_line.svg'), self.tr('Single Point Templated Marker Via Two Points'))
         action_single_point_at_center_of_line.setCheckable(True)
         self.tools[TwoPointTemplatedMarkerTool.ID] = TwoPointTemplatedMarkerTool(self.iface.mapCanvas(),
-                                                                                       self.iface.cadDockWidget(),
-                                                                                       self.iface,
-                                                                                       action_single_point_at_center_of_line)
+                                                                                 self.iface.cadDockWidget(),
+                                                                                 self.iface,
+                                                                                 action_single_point_at_center_of_line)
         self.tools[TwoPointTemplatedMarkerTool.ID].setAction(action_single_point_at_center_of_line)
         action_single_point_at_center_of_line.triggered.connect(partial(
             self.switch_tool, TwoPointTemplatedMarkerTool.ID))
@@ -161,16 +158,15 @@ class CartographyToolsPlugin:
 
         self.get_map_tool_action_group().addAction(action_single_point_at_center_of_line)
 
-
         # multi point tool
 
         action_multi_point_templated_marker = QAction(GuiUtils.get_icon(
             'multi_point_templated_marker.svg'), self.tr('Multiple Point Templated Marker Along LineString'))
         action_multi_point_templated_marker.setCheckable(True)
         self.tools[MultiPointTemplatedMarkerTool.ID] = MultiPointTemplatedMarkerTool(self.iface.mapCanvas(),
-                                                                                       self.iface.cadDockWidget(),
-                                                                                       self.iface,
-                                                                                       action_multi_point_templated_marker)
+                                                                                     self.iface.cadDockWidget(),
+                                                                                     self.iface,
+                                                                                     action_multi_point_templated_marker)
         self.tools[MultiPointTemplatedMarkerTool.ID].setAction(action_multi_point_templated_marker)
         action_multi_point_templated_marker.triggered.connect(partial(
             self.switch_tool, MultiPointTemplatedMarkerTool.ID))
@@ -183,13 +179,16 @@ class CartographyToolsPlugin:
         # multi at center of segment point tool
 
         action_multi_point_center_segment_templated_marker = QAction(GuiUtils.get_icon(
-            'multi_point_templated_marker_at_center.svg'), self.tr('Multiple Point Templated Marker At Center Of Segments'))
+            'multi_point_templated_marker_at_center.svg'),
+            self.tr('Multiple Point Templated Marker At Center Of Segments'))
         action_multi_point_center_segment_templated_marker.setCheckable(True)
-        self.tools[MultiPointSegmentCenterTemplatedMarkerTool.ID] = MultiPointSegmentCenterTemplatedMarkerTool(self.iface.mapCanvas(),
-                                                                                       self.iface.cadDockWidget(),
-                                                                                       self.iface,
-                                                                                       action_multi_point_center_segment_templated_marker)
-        self.tools[MultiPointSegmentCenterTemplatedMarkerTool.ID].setAction(action_multi_point_center_segment_templated_marker)
+        self.tools[MultiPointSegmentCenterTemplatedMarkerTool.ID] = MultiPointSegmentCenterTemplatedMarkerTool(
+            self.iface.mapCanvas(),
+            self.iface.cadDockWidget(),
+            self.iface,
+            action_multi_point_center_segment_templated_marker)
+        self.tools[MultiPointSegmentCenterTemplatedMarkerTool.ID].setAction(
+            action_multi_point_center_segment_templated_marker)
         action_multi_point_center_segment_templated_marker.triggered.connect(partial(
             self.switch_tool, MultiPointSegmentCenterTemplatedMarkerTool.ID))
         action_multi_point_center_segment_templated_marker.setData(MultiPointSegmentCenterTemplatedMarkerTool.ID)
@@ -261,4 +260,3 @@ class CartographyToolsPlugin:
                 if tool == self.active_tool and not action.isEnabled():
                     self.iface.mapCanvas().unsetMapTool(tool)
                     self.iface.actionPan().trigger()
-
