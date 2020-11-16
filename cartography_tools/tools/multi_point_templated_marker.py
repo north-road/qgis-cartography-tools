@@ -213,11 +213,12 @@ class MultiPointTemplatedMarkerTool(Tool):
         self.current_layer().triggerRepaint()
 
     def keyPressEvent(self, e):
-        if self.points and e.key() == Qt.Key_Escape and not e.isAutoRepeat():
+        if (self.points or  self.line_segment_start is not None) and e.key() == Qt.Key_Escape and not e.isAutoRepeat():
             self.remove_line_item()
             if self.current_layer():
                 self.current_layer().triggerRepaint()
             self.points = []
+            self.line_segment_start = None
 
     def is_compatible_with_layer(self, layer: QgsMapLayer, is_editable: bool):
         if layer is None:

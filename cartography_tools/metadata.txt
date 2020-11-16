@@ -10,7 +10,7 @@
 name=Cartography Tools
 qgisMinimumVersion=3.10
 description=A set of map tools and Processing algorithms for cartographic tools
-version=1.0.12
+version=1.0.13
 author=North Road
 email=nyall@north-road.com
 
@@ -23,7 +23,8 @@ repository=https://github.com/north-road/qgis-cartography-tools
 # Recommended items:
 
 # Uncomment the following line and add your changelog:
-changelog=1.0.12 Add new tool for defining marker lines using two click, take centerpoint method
+changelog=1.0.13 Fix exception in new two click line drawing tools
+    1.0.12 Add new tool for defining marker lines using two click, take centerpoint method
     1.0.11 Further behavior tweaks
     1.0.10 Tweak new setting behavior
     1.0.9 Add options for fixed distance markers, ignoring line endpoints, and a new tool to place markers at center of segment
