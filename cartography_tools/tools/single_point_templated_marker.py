@@ -42,7 +42,7 @@ class SinglePointTemplatedMarkerTool(Tool):
     def __init__(self, canvas: QgsMapCanvas, cad_dock_widget, iface, action):
         super().__init__(SinglePointTemplatedMarkerTool.ID, action, canvas, cad_dock_widget, iface)
 
-        self.setCursor(QgsApplication.getThemeCursor(QgsApplication.Cursor.CapturePoint))
+        self.setCursor(QgsApplication.getThemeCursor(QgsApplication.CapturePoint))
 
         self.widget = None
         self._layer = None

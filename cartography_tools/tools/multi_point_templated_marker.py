@@ -49,7 +49,7 @@ class MultiPointTemplatedMarkerTool(Tool):
                  line_segment_center_mode: bool = False):
         super().__init__(MultiPointTemplatedMarkerTool.ID, action, canvas, cad_dock_widget, iface)
 
-        self.setCursor(QgsApplication.getThemeCursor(QgsApplication.Cursor.CapturePoint))
+        self.setCursor(QgsApplication.getThemeCursor(QgsApplication.CapturePoint))
 
         self.fixed_number_points = fixed_number_points
         self.single_segment_digitizing = single_segment_digitizing
