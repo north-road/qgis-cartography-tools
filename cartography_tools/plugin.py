@@ -40,6 +40,7 @@ from cartography_tools.tools.multi_point_templated_marker import (
     MultiPointSegmentCenterTemplatedMarkerTool
 )
 from cartography_tools.tools.single_point_templated_marker import SinglePointTemplatedMarkerTool
+from cartography_tools.gui.layout_designer_hooks import LayoutDesignerHooks
 
 VERSION = '1.0.0'
 
@@ -80,6 +81,7 @@ class CartographyToolsPlugin:
         self.tools = {}
 
         self.active_tool = None
+        self.layout_hooks = LayoutDesignerHooks()
 
     @staticmethod
     def tr(message):
@@ -112,6 +114,8 @@ class CartographyToolsPlugin:
 
         self.iface.currentLayerChanged.connect(self.current_layer_changed)
         self.iface.actionToggleEditing().toggled.connect(self.editing_toggled)
+
+        self.layout_hooks.init_gui(self.iface)
 
     def get_map_tool_action_group(self):
         try:
@@ -210,6 +214,7 @@ class CartographyToolsPlugin:
                 action.deleteLater()
 
         self.iface.currentLayerChanged.disconnect(self.current_layer_changed)
+        self.layout_hooks.unload(self.iface)
 
     def switch_tool(self, tool_id: str):
         """
