@@ -25,7 +25,10 @@ from qgis.PyQt.QtWidgets import (
     QAction,
 )
 from qgis.core import (
-    QgsLayoutItemMap
+    QgsLayoutItemMap,
+    check,
+    QgsAbstractValidityCheck,
+    QgsValidityCheckResult
 )
 from qgis.gui import (
     QgisInterface,
@@ -96,3 +99,19 @@ class LayoutDesignerHooks(QObject):
                 flags &= ~QgsLayoutItemMap.ShowUnplacedLabels
             m.setMapFlags(flags)
             m.invalidateCache()
+
+
+@check.register(type=QgsAbstractValidityCheck.TypeLayoutCheck)
+def layout_map_unplaced_labels_check(context, feedback):
+    layout = context.layout
+    results = []
+    for i in layout.items():
+        if isinstance(i, QgsLayoutItemMap) and i.mapFlags() & QgsLayoutItemMap.ShowUnplacedLabels:
+            res = QgsValidityCheckResult()
+            res.type = QgsValidityCheckResult.Warning
+            res.title = 'Unplaced labels are visible'
+            res.detailedDescription = 'The map item {} currently has unplaced labels shown. This setting is only suitable for draft exports.'.format(
+                i.displayName())
+            results.append(res)
+
+    return results
