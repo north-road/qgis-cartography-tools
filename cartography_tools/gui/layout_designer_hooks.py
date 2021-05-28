@@ -15,10 +15,6 @@ __revision__ = '$Format:%H$'
 
 from functools import partial
 
-from qgis.core import (
-    QgsLayoutItemMap
-)
-
 from qgis.PyQt.QtCore import (
     QObject
 )
@@ -27,6 +23,9 @@ from qgis.PyQt.QtGui import (
 )
 from qgis.PyQt.QtWidgets import (
     QAction,
+)
+from qgis.core import (
+    QgsLayoutItemMap
 )
 from qgis.gui import (
     QgisInterface,
@@ -97,6 +96,3 @@ class LayoutDesignerHooks(QObject):
                 flags &= ~QgsLayoutItemMap.ShowUnplacedLabels
             m.setMapFlags(flags)
             m.invalidateCache()
-
-
-
