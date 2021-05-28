@@ -66,7 +66,7 @@ class LayoutDesignerHooks(QObject):
         # determine initial check state
         layout = designer.layout()
         maps = [item for item in layout.items() if isinstance(item, QgsLayoutItemMap)]
-        initial_checked = all(m.mapFlags() & QgsLayoutItemMap.ShowUnplacedLabels for m in maps)
+        initial_checked = bool(maps) and all(m.mapFlags() & QgsLayoutItemMap.ShowUnplacedLabels for m in maps)
         toggle_unplaced_labels_action.setChecked(initial_checked)
         toggle_unplaced_labels_action.toggled.connect(partial(self.toggle_unplaced_labels, designer))
         toggle_unplaced_labels_action.setShortcut(QKeySequence('Ctrl+Shift+U'))
