@@ -22,8 +22,11 @@ from qgis.core import (
 from qgis.PyQt.QtCore import (
     QObject
 )
+from qgis.PyQt.QtGui import (
+    QKeySequence
+)
 from qgis.PyQt.QtWidgets import (
-    QAction
+    QAction,
 )
 from qgis.gui import (
     QgisInterface,
@@ -66,11 +69,14 @@ class LayoutDesignerHooks(QObject):
         maps = [item for item in layout.items() if isinstance(item, QgsLayoutItemMap)]
         initial_checked = all(m.mapFlags() & QgsLayoutItemMap.ShowUnplacedLabels for m in maps)
         toggle_unplaced_labels_action.setChecked(initial_checked)
+        toggle_unplaced_labels_action.toggled.connect(partial(self.toggle_unplaced_labels, designer))
+        toggle_unplaced_labels_action.setShortcut(QKeySequence('Ctrl+Shift+U'))
 
         tb = designer.actionsToolbar()
         tb.addSeparator()
         tb.addAction(toggle_unplaced_labels_action)
-        toggle_unplaced_labels_action.toggled.connect(partial(self.toggle_unplaced_labels, designer))
+        designer.viewMenu().addSeparator()
+        designer.viewMenu().addAction(toggle_unplaced_labels_action)
 
     def designer_will_be_closed(self, designer: QgsLayoutDesignerInterface):
         """
