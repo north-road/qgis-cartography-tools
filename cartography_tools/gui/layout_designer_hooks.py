@@ -115,3 +115,18 @@ def layout_map_unplaced_labels_check(context, feedback):
             results.append(res)
 
     return results
+
+
+@check.register(type=QgsAbstractValidityCheck.TypeLayoutCheck)
+def layout_map_rasterized_check(context, feedback):
+    layout = context.layout
+    results = []
+    if layout.customProperty('rasterize', False):
+        res = QgsValidityCheckResult()
+        res.type = QgsValidityCheckResult.Warning
+        res.title = 'Layout export will be rasterized'
+        res.detailedDescription = 'The layout is set to be completely rasterized, even when exporting to vector formats such as PDF or SVG.'
+        results.append(res)
+
+    return results
+
