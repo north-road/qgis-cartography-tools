@@ -25,6 +25,7 @@ from qgis.PyQt.QtWidgets import (
     QAction,
 )
 from qgis.core import (
+    QgsLayoutItem,
     QgsLayoutItemMap,
     check,
     QgsAbstractValidityCheck,
@@ -127,6 +128,32 @@ def layout_map_rasterized_check(context, feedback):
         res.title = 'Layout export will be rasterized'
         res.detailedDescription = 'The layout is set to be completely rasterized, even when exporting to vector formats such as PDF or SVG.'
         results.append(res)
+
+    return results
+
+
+@check.register(type=QgsAbstractValidityCheck.TypeLayoutCheck)
+def layout_item_rasterized_check(context, feedback):
+    layout = context.layout
+    results = []
+    for i in layout.items():
+        if isinstance(i, QgsLayoutItem):
+            if i.requiresRasterization():
+                res = QgsValidityCheckResult()
+                res.type = QgsValidityCheckResult.Warning
+                res.title = 'Layout export will be rasterized'
+                res.detailedDescription = 'The item {} uses settings (e.g. blending modes) which require the whole layout to be rasterized during export. This ' \
+                                          'will degrade the quality of the output.'.format(
+                    i.displayName().replace('<', '&lt;'))
+                results.append(res)
+            elif i.containsAdvancedEffects():
+                res = QgsValidityCheckResult()
+                res.type = QgsValidityCheckResult.Warning
+                res.title = 'Item will be rasterized'
+                res.detailedDescription = 'The item {} uses settings (e.g. transparency) which require this item to be rasterized during export. This ' \
+                                          'will degrade the quality of the output.'.format(
+                    i.displayName().replace('<', '&lt;'))
+                results.append(res)
 
     return results
 

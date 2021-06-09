@@ -42,7 +42,7 @@ from cartography_tools.tools.multi_point_templated_marker import (
 from cartography_tools.tools.single_point_templated_marker import SinglePointTemplatedMarkerTool
 from cartography_tools.gui.layout_designer_hooks import LayoutDesignerHooks
 
-VERSION = '1.2.0'
+VERSION = '1.2.1'
 
 
 class CartographyToolsPlugin:
