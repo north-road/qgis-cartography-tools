@@ -105,7 +105,7 @@ class PointsAlongLineItem(QgsMapCanvasItem):
                 r.combineExtentWith(point_rect)
 
         res = map_to_pixel.mapUnitsPerPixel()
-        top_left = map_to_pixel.toMapCoordinates(r.xMinimum(), r.yMinimum())
+        top_left = map_to_pixel.toMapCoordinates(int(r.xMinimum()), int(r.yMinimum()))
 
         self.setRect(
             QgsRectangle(top_left.x(), top_left.y(), top_left.x() + r.width() * res, top_left.y() - r.height() * res))
