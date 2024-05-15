@@ -185,7 +185,7 @@ class PointsAlongLineItem(QgsMapCanvasItem):
                 painter.translate(canvas_point.x(),
                                   canvas_point.y())
                 painter.rotate(angle + (180 if self.orientation in (90, 270) else 0))
-                painter.drawPixmap(-self.pixmap.width() / 2, -self.pixmap.height() / 2, self.pixmap)
+                painter.drawPixmap(int(-self.pixmap.width() / 2), int(-self.pixmap.height() / 2), self.pixmap)
                 painter.restore()
 
         painter.restore()
