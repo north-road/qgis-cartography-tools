@@ -49,7 +49,7 @@ class MultiPointTemplatedMarkerTool(Tool):
                  line_segment_center_mode: bool = False):
         super().__init__(MultiPointTemplatedMarkerTool.ID, action, canvas, cad_dock_widget, iface)
 
-        self.setCursor(QgsApplication.getThemeCursor(QgsApplication.CapturePoint))
+        self.setCursor(QgsApplication.getThemeCursor(QgsApplication.Cursor.CapturePoint))
 
         self.fixed_number_points = fixed_number_points
         self.single_segment_digitizing = single_segment_digitizing
@@ -134,7 +134,7 @@ class MultiPointTemplatedMarkerTool(Tool):
             return
 
         point = self.toLayerCoordinates(self.current_layer(), e.snapPoint())
-        if not self.points and e.button() == Qt.LeftButton:
+        if not self.points and e.button() == Qt.MouseButton.LeftButton:
             if self.line_segment_center_mode:
                 if self.line_segment_start is None:
                     # first click = start segment
@@ -157,7 +157,7 @@ class MultiPointTemplatedMarkerTool(Tool):
                 self.points.append(point)
                 self.create_line_item(e.snapPoint())
                 self.current_layer().triggerRepaint()
-        elif e.button() == Qt.LeftButton and not self.single_segment_digitizing:
+        elif e.button() == Qt.MouseButton.LeftButton and not self.single_segment_digitizing:
             # subsequent left clicks -- add node to line
             if self.line_segment_center_mode:
                 if self.line_segment_start is None:
@@ -177,11 +177,11 @@ class MultiPointTemplatedMarkerTool(Tool):
                 self.points.append(point)
                 self.line_item.add_point(e.snapPoint())
         elif (self.points or self.line_segment_start is not None) and (
-                e.button() == Qt.RightButton or (e.button() == Qt.LeftButton and self.single_segment_digitizing)):
-            if e.button() == Qt.LeftButton:
+                e.button() == Qt.MouseButton.RightButton or (e.button() == Qt.MouseButton.LeftButton and self.single_segment_digitizing)):
+            if e.button() == Qt.MouseButton.LeftButton:
                 self.points.append(point)
 
-            elif e.button() == Qt.RightButton and self.line_segment_start is not None:
+            elif e.button() == Qt.MouseButton.RightButton and self.line_segment_start is not None:
                 # right click while drawing a segment = just take start of segment
                 self.points.append(self.line_segment_start)
 
@@ -213,7 +213,7 @@ class MultiPointTemplatedMarkerTool(Tool):
         self.current_layer().triggerRepaint()
 
     def keyPressEvent(self, e):
-        if (self.points or self.line_segment_start is not None) and e.key() == Qt.Key_Escape and not e.isAutoRepeat():
+        if (self.points or self.line_segment_start is not None) and e.key() == Qt.Key.Key_Escape and not e.isAutoRepeat():
             self.remove_line_item()
             if self.current_layer():
                 self.current_layer().triggerRepaint()
@@ -227,7 +227,7 @@ class MultiPointTemplatedMarkerTool(Tool):
         if layer.type() != QgsMapLayerType.VectorLayer:
             return False
 
-        return layer.geometryType() == QgsWkbTypes.PointGeometry and is_editable
+        return layer.geometryType() == QgsWkbTypes.GeometryType.PointGeometry and is_editable
 
     def create_widget(self):
         self.delete_widget()
