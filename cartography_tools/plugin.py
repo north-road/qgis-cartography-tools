@@ -23,8 +23,8 @@ from qgis.PyQt.QtCore import (QTranslator,
 from qgis.PyQt.QtWidgets import (
     QToolBar,
     QAction,
-    QActionGroup
 )
+from qgis.PyQt.QtGui import QActionGroup
 from qgis.core import (
     QgsApplication,
     QgsMapLayer,
