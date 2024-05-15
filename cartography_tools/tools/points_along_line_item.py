@@ -45,8 +45,8 @@ class PointsAlongLineItem(QgsMapCanvasItem):
         self.include_endpoints = True
         self.pixmap = QPixmap()
 
-        im = QImage(24, 24, QImage.Format_ARGB32)
-        im.fill(Qt.transparent)
+        im = QImage(24, 24, QImage.Format.Format_ARGB32)
+        im.fill(Qt.GlobalColor.transparent)
         self.set_symbol(im)
 
         if start_point is not None:
@@ -58,7 +58,7 @@ class PointsAlongLineItem(QgsMapCanvasItem):
 
         self.pen = QPen()
         self.pen.setWidth(GuiUtils.scale_icon_size(4))
-        self.pen.setColor(QColor(Qt.white))
+        self.pen.setColor(QColor(Qt.GlobalColor.white))
 
         self.marker_count = 2
         self.marker_distance = None
@@ -124,7 +124,7 @@ class PointsAlongLineItem(QgsMapCanvasItem):
             all_points += [self.hover_point]
 
         painter.save()
-        painter.setRenderHint(QPainter.Antialiasing, True)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
 
         if self.segment_start_point is not None and self.hover_point is not None:
             segment_points = [QgsPointXY(self.toCanvasCoordinates(p) - self.pos()) for p in
@@ -135,7 +135,7 @@ class PointsAlongLineItem(QgsMapCanvasItem):
             pen = QPen()
             pen.setWidth(GuiUtils.scale_icon_size(4))
             pen.setColor(QColor(255, 255, 255, 100))
-            pen.setStyle(Qt.DotLine)
+            pen.setStyle(Qt.PenStyle.DotLine)
             painter.setPen(pen)
             painter.drawPath(segment_path)
             pen.setWidth(GuiUtils.scale_icon_size(1))
@@ -164,7 +164,7 @@ class PointsAlongLineItem(QgsMapCanvasItem):
         pen = QPen()
         pen.setWidth(GuiUtils.scale_icon_size(4))
         pen.setColor(QColor(255, 255, 255, 100))
-        pen.setStyle(Qt.DashLine)
+        pen.setStyle(Qt.PenStyle.DashLine)
         painter.setPen(pen)
         painter.drawPath(line_path)
         pen.setWidth(GuiUtils.scale_icon_size(1))

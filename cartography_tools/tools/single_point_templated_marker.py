@@ -42,7 +42,7 @@ class SinglePointTemplatedMarkerTool(Tool):
     def __init__(self, canvas: QgsMapCanvas, cad_dock_widget, iface, action):
         super().__init__(SinglePointTemplatedMarkerTool.ID, action, canvas, cad_dock_widget, iface)
 
-        self.setCursor(QgsApplication.getThemeCursor(QgsApplication.CapturePoint))
+        self.setCursor(QgsApplication.getThemeCursor(QgsApplication.Cursor.CapturePoint))
 
         self.widget = None
         self._layer = None
@@ -116,7 +116,7 @@ class SinglePointTemplatedMarkerTool(Tool):
             return
 
         point = self.toLayerCoordinates(self.current_layer(), e.snapPoint())
-        if self.initial_point is None and e.button() == Qt.LeftButton:
+        if self.initial_point is None and e.button() == Qt.MouseButton.LeftButton:
             # depending on whether a rotation field is selected, we either start the interactive rotation or
             # immediately create the feature
             if self.widget.rotation_field():
@@ -128,7 +128,7 @@ class SinglePointTemplatedMarkerTool(Tool):
                 self.current_layer().addFeature(f)
                 self.current_layer().triggerRepaint()
         else:
-            if e.button() == Qt.LeftButton:
+            if e.button() == Qt.MouseButton.LeftButton:
                 f = self.create_feature(point=self.initial_point, rotation=self.initial_point.azimuth(point))
                 self.current_layer().addFeature(f)
 
@@ -137,7 +137,7 @@ class SinglePointTemplatedMarkerTool(Tool):
             self.remove_rotation_item()
 
     def keyPressEvent(self, e):
-        if self.initial_point and e.key() == Qt.Key_Escape and not e.isAutoRepeat():
+        if self.initial_point and e.key() == Qt.Key.Key_Escape and not e.isAutoRepeat():
             self.remove_rotation_item()
             if self.current_layer():
                 self.current_layer().triggerRepaint()
@@ -150,7 +150,7 @@ class SinglePointTemplatedMarkerTool(Tool):
         if layer.type() != QgsMapLayerType.VectorLayer:
             return False
 
-        return layer.geometryType() == QgsWkbTypes.PointGeometry and is_editable
+        return layer.geometryType() == QgsWkbTypes.GeometryType.PointGeometry and is_editable
 
     def create_widget(self):
         self.delete_widget()
