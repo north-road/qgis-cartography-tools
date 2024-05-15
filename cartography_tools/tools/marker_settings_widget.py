@@ -36,7 +36,7 @@ class MarkerSettingsWidget(BASE, WIDGET):
         self.setupUi(self)
 
         self.code_combo.setEditable(True)
-        self.code_combo.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred)
+        self.code_combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self.code_combo.setMinimumWidth(QFontMetrics(self.font()).width('X') * 40)
 
         self.field_code_combo.setAllowEmptyFieldName(True)
