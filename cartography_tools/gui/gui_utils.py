@@ -106,16 +106,16 @@ class GuiUtils:
         """
         Generate a big symbol preview image for a marker
         """
-        preview = QImage(QSize(100, 100), QImage.Format_ARGB32_Premultiplied)
+        preview = QImage(QSize(100, 100), QImage.Format.Format_ARGB32_Premultiplied)
         preview.fill(0)
 
         p = QPainter(preview)
-        p.setRenderHint(QPainter.Antialiasing)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
         p.translate(0.5, 0.5)
 
         context = QgsRenderContext.fromQPainter(p)
         try:
-            context.setFlag(QgsRenderContext.RenderSymbolPreview)
+            context.setFlag(QgsRenderContext.Flag.RenderSymbolPreview)
         except AttributeError:
             pass
 

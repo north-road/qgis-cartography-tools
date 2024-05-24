@@ -70,7 +70,7 @@ class LayoutDesignerHooks(QObject):
         # determine initial check state
         layout = designer.layout()
         maps = [item for item in layout.items() if isinstance(item, QgsLayoutItemMap)]
-        initial_checked = bool(maps) and all(m.mapFlags() & QgsLayoutItemMap.ShowUnplacedLabels for m in maps)
+        initial_checked = bool(maps) and all(m.mapFlags() & QgsLayoutItemMap.MapItemFlag.ShowUnplacedLabels for m in maps)
         toggle_unplaced_labels_action.setChecked(initial_checked)
         toggle_unplaced_labels_action.toggled.connect(partial(self.toggle_unplaced_labels, designer))
         toggle_unplaced_labels_action.setShortcut(QKeySequence('Ctrl+Shift+U'))
@@ -95,21 +95,21 @@ class LayoutDesignerHooks(QObject):
         for m in maps:
             flags = m.mapFlags()
             if checked:
-                flags |= QgsLayoutItemMap.ShowUnplacedLabels
+                flags |= QgsLayoutItemMap.MapItemFlag.ShowUnplacedLabels
             else:
-                flags &= ~QgsLayoutItemMap.ShowUnplacedLabels
+                flags &= ~QgsLayoutItemMap.MapItemFlag.ShowUnplacedLabels
             m.setMapFlags(flags)
             m.invalidateCache()
 
 
-@check.register(type=QgsAbstractValidityCheck.TypeLayoutCheck)
+@check.register(type=QgsAbstractValidityCheck.Type.TypeLayoutCheck)
 def layout_map_unplaced_labels_check(context, feedback):
     layout = context.layout
     results = []
     for i in layout.items():
-        if isinstance(i, QgsLayoutItemMap) and i.mapFlags() & QgsLayoutItemMap.ShowUnplacedLabels:
+        if isinstance(i, QgsLayoutItemMap) and i.mapFlags() & QgsLayoutItemMap.MapItemFlag.ShowUnplacedLabels:
             res = QgsValidityCheckResult()
-            res.type = QgsValidityCheckResult.Warning
+            res.type = QgsValidityCheckResult.Type.Warning
             res.title = 'Unplaced labels are visible'
             res.detailedDescription = 'The map item {} currently has unplaced labels shown. This setting is only suitable for draft exports.'.format(
                 i.displayName())
@@ -118,13 +118,13 @@ def layout_map_unplaced_labels_check(context, feedback):
     return results
 
 
-@check.register(type=QgsAbstractValidityCheck.TypeLayoutCheck)
+@check.register(type=QgsAbstractValidityCheck.Type.TypeLayoutCheck)
 def layout_map_rasterized_check(context, feedback):
     layout = context.layout
     results = []
     if layout.customProperty('rasterize', False):
         res = QgsValidityCheckResult()
-        res.type = QgsValidityCheckResult.Warning
+        res.type = QgsValidityCheckResult.Type.Warning
         res.title = 'Layout export will be rasterized'
         res.detailedDescription = 'The layout is set to be completely rasterized, even when exporting to vector formats such as PDF or SVG.'
         results.append(res)
@@ -132,7 +132,7 @@ def layout_map_rasterized_check(context, feedback):
     return results
 
 
-@check.register(type=QgsAbstractValidityCheck.TypeLayoutCheck)
+@check.register(type=QgsAbstractValidityCheck.Type.TypeLayoutCheck)
 def layout_item_rasterized_check(context, feedback):
     layout = context.layout
     results = []
@@ -140,7 +140,7 @@ def layout_item_rasterized_check(context, feedback):
         if isinstance(i, QgsLayoutItem):
             if i.requiresRasterization():
                 res = QgsValidityCheckResult()
-                res.type = QgsValidityCheckResult.Warning
+                res.type = QgsValidityCheckResult.Type.Warning
                 res.title = 'Layout export will be rasterized'
                 res.detailedDescription = 'The item {} uses settings (e.g. blending modes) which require the whole layout to be rasterized during export. This ' \
                                           'will degrade the quality of the output.'.format(
@@ -148,7 +148,7 @@ def layout_item_rasterized_check(context, feedback):
                 results.append(res)
             elif i.containsAdvancedEffects():
                 res = QgsValidityCheckResult()
-                res.type = QgsValidityCheckResult.Warning
+                res.type = QgsValidityCheckResult.Type.Warning
                 res.title = 'Item will be rasterized'
                 res.detailedDescription = 'The item {} uses settings (e.g. transparency) which require this item to be rasterized during export. This ' \
                                           'will degrade the quality of the output.'.format(

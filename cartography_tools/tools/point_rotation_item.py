@@ -48,8 +48,8 @@ class PointRotationItem(QgsMapCanvasItem):
 
         self.arrow_path = QPainterPath()
 
-        im = QImage(24, 24, QImage.Format_ARGB32)
-        im.fill(Qt.transparent)
+        im = QImage(24, 24, QImage.Format.Format_ARGB32)
+        im.fill(Qt.GlobalColor.transparent)
         self.set_symbol(im)
 
     def paint(self, painter, option, widget):
@@ -57,7 +57,7 @@ class PointRotationItem(QgsMapCanvasItem):
             return
 
         painter.save()
-        painter.setRenderHint(QPainter.Antialiasing, True)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
 
         # do a bit of trigonometry to find out how to transform a rotated item such
         # that the center point is at the point feature
@@ -79,31 +79,31 @@ class PointRotationItem(QgsMapCanvasItem):
         # against a range of backgrounds
         pen = QPen()
         pen.setWidth(GuiUtils.scale_icon_size(4))
-        pen.setColor(QColor(Qt.white))
+        pen.setColor(QColor(Qt.GlobalColor.white))
         painter.setPen(pen)
         painter.drawPath(self.arrow_path)
         pen.setWidth(GuiUtils.scale_icon_size(1))
-        pen.setColor(QColor(Qt.red))
+        pen.setColor(QColor(Qt.GlobalColor.red))
         painter.setPen(pen)
         painter.drawPath(self.arrow_path)
         painter.restore()
 
         # draw numeric value beside the symbol
         painter.save()
-        painter.setRenderHint(QPainter.Antialiasing, True)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
 
         buffer_pen = QPen()
-        buffer_pen.setColor(Qt.white)
+        buffer_pen.setColor(Qt.GlobalColor.white)
         buffer_pen.setWidthF(GuiUtils.scale_icon_size(4))
         fm = QFontMetricsF(self.marker_font)
         label = QPainterPath()
         label.addText(self.pixmap.width(), self.pixmap.height() / 2.0 + fm.height() / 2.0, self.marker_font,
                       str(round(self.rotation, 1)))
         painter.setPen(buffer_pen)
-        painter.setBrush(Qt.NoBrush)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
         painter.drawPath(label)
-        painter.setPen(Qt.NoPen)
-        painter.setBrush(QBrush(Qt.black))
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QBrush(Qt.GlobalColor.black))
         painter.drawPath(label)
 
         painter.restore()

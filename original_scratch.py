@@ -67,15 +67,15 @@ def break_lines_into_similar_segments(inputs, min_dist):
 
 
 def split_to_similar_sections(g1, g2, dist):
-    buffer = g2.buffer(dist, 0, QgsGeometry.CapFlat, QgsGeometry.JoinStyleMiter, 20)
+    buffer = g2.buffer(dist, 0, QgsGeometry.EndCapStyle.CapFlat, QgsGeometry.JoinStyle.JoinStyleMiter, 20)
     # f = QgsFeature()
     # f.setGeometry(buffer)
     # polys.dataProvider().addFeature(f)
     u1 = g1.intersection(buffer)
     d1 = g1.difference(buffer)
 
-    parts1 = [p.clone() for p in u1.parts() if p.wkbType() == QgsWkbTypes.LineString and p.length() > 0]
-    parts1.extend([p.clone() for p in d1.parts() if p.wkbType() == QgsWkbTypes.LineString and p.length() > 0])
+    parts1 = [p.clone() for p in u1.parts() if p.wkbType() == QgsWkbTypes.Type.LineString and p.length() > 0]
+    parts1.extend([p.clone() for p in d1.parts() if p.wkbType() == QgsWkbTypes.Type.LineString and p.length() > 0])
 
     # if we get two parts, and one is <= DIST long, we don't split (T intersection)
     if len(parts1) == 2 and (parts1[0].length() <= dist * 1.01 or parts1[1].length() <= dist * 1.01):
@@ -397,8 +397,8 @@ for id, f in named_parts.items():
     processed.add(parts[0])
 
 # simplify
-simplifier = QgsMapToPixelSimplifier(QgsMapToPixelSimplifier.SimplifyGeometry, 0.00005,
-                                     QgsMapToPixelSimplifier.Visvalingam)
+simplifier = QgsMapToPixelSimplifier(QgsMapToPixelSimplifier.SimplifyFlag.SimplifyGeometry, 0.00005,
+                                     QgsMapToPixelSimplifier.SimplifyAlgorithm.Visvalingam)
 for id, f in filtered.items():
     filtered[id].setGeometry(simplifier.simplify(f.geometry()))
 

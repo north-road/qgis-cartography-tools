@@ -65,7 +65,7 @@ class RemoveRoundaboutsAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 self.tr('Input layer'),
-                [QgsProcessing.TypeVectorLine]
+                [QgsProcessing.SourceType.TypeVectorLine]
             )
         )
 
@@ -102,7 +102,7 @@ class RemoveRoundaboutsAlgorithm(QgsProcessingAlgorithm):
             self.OUTPUT,
             context,
             source.fields(),
-            QgsWkbTypes.LineString,
+            QgsWkbTypes.Type.LineString,
             source.sourceCrs()
         )
         if sink is None:
@@ -140,7 +140,7 @@ class RemoveRoundaboutsAlgorithm(QgsProcessingAlgorithm):
             expression_context.setFeature(feature)
 
             is_roundabout = exp.evaluate(expression_context)
-            if not feature.geometry().wkbType() == QgsWkbTypes.LineString:
+            if not feature.geometry().wkbType() == QgsWkbTypes.Type.LineString:
                 geom = feature.geometry()
                 for p in geom.parts():
                     add_feature(feature, _id, QgsGeometry(p.clone()), is_roundabout)
@@ -268,7 +268,7 @@ class RemoveRoundaboutsAlgorithm(QgsProcessingAlgorithm):
             if feedback.isCanceled():
                 break
 
-            sink.addFeature(f, QgsFeatureSink.FastInsert)
+            sink.addFeature(f, QgsFeatureSink.Flag.FastInsert)
             current += 1
             feedback.setProgress(95 + int(current * total))
 
@@ -309,7 +309,7 @@ class RemoveCuldesacsAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 self.tr('Input layer'),
-                [QgsProcessing.TypeVectorLine]
+                [QgsProcessing.SourceType.TypeVectorLine]
             )
         )
 
@@ -377,7 +377,7 @@ class RemoveCuldesacsAlgorithm(QgsProcessingAlgorithm):
 
             current += 1
             if f.geometry().length() >= threshold:
-                sink.addFeature(f, QgsFeatureSink.FastInsert)
+                sink.addFeature(f, QgsFeatureSink.Flag.FastInsert)
                 feedback.setProgress(10 + int(current * total))
                 continue
 
@@ -416,7 +416,7 @@ class RemoveCuldesacsAlgorithm(QgsProcessingAlgorithm):
             feedback.setProgress(10 + int(current * total))
             if touching_start and touching_end:
                 # keep it, it joins two roads
-                sink.addFeature(f, QgsFeatureSink.FastInsert)
+                sink.addFeature(f, QgsFeatureSink.Flag.FastInsert)
                 continue
 
             removed += 1
@@ -461,7 +461,7 @@ class RemoveCrossRoadsAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 self.tr('Input layer'),
-                [QgsProcessing.TypeVectorLine]
+                [QgsProcessing.SourceType.TypeVectorLine]
             )
         )
 
@@ -539,7 +539,7 @@ class RemoveCrossRoadsAlgorithm(QgsProcessingAlgorithm):
             current += 1
 
             if f.geometry().length() >= threshold:
-                sink.addFeature(f, QgsFeatureSink.FastInsert)
+                sink.addFeature(f, QgsFeatureSink.Flag.FastInsert)
                 feedback.setProgress(10 + int(current * total))
                 continue
 
@@ -589,7 +589,7 @@ class RemoveCrossRoadsAlgorithm(QgsProcessingAlgorithm):
                 # kill it
                 removed += 1
             else:
-                sink.addFeature(f, QgsFeatureSink.FastInsert)
+                sink.addFeature(f, QgsFeatureSink.Flag.FastInsert)
 
         feedback.pushInfo(self.tr('Removed {} cross roads'.format(removed)))
 
@@ -631,7 +631,7 @@ class CollapseDualCarriagewayAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 self.tr('Input layer'),
-                [QgsProcessing.TypeVectorLine]
+                [QgsProcessing.SourceType.TypeVectorLine]
             )
         )
 
@@ -833,7 +833,7 @@ class CollapseDualCarriagewayAlgorithm(QgsProcessingAlgorithm):
             if feedback.isCanceled():
                 break
 
-            sink.addFeature(f, QgsFeatureSink.FastInsert)
+            sink.addFeature(f, QgsFeatureSink.Flag.FastInsert)
             current += 1
             feedback.setProgress(95 + int(current * total))
 
@@ -862,7 +862,7 @@ class AverageLinesAlgorithm(QgsProcessingAlgorithm):
 
     def flags(self):  # pylint: disable=missing-function-docstring
         f = super().flags()
-        f |= QgsProcessingAlgorithm.FlagSupportsInPlaceEdits
+        f |= QgsProcessingAlgorithm.Flag.FlagSupportsInPlaceEdits
         return f
 
     def group(self):  # pylint: disable=missing-function-docstring
@@ -875,14 +875,14 @@ class AverageLinesAlgorithm(QgsProcessingAlgorithm):
         return self.tr("Creates an average of a set of linestring inputs")
 
     def supportInPlaceEdit(self, layer):  # pylint: disable=missing-function-docstring
-        return layer.type() == QgsMapLayer.VectorLayer and layer.geometryType() == QgsWkbTypes.LineGeometry
+        return layer.type() == QgsMapLayer.LayerType.VectorLayer and layer.geometryType() == QgsWkbTypes.GeometryType.LineGeometry
 
     def initAlgorithm(self, config=None):  # pylint: disable=unused-argument, missing-function-docstring
         self.addParameter(
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 self.tr('Input layer'),
-                [QgsProcessing.TypeVectorLine]
+                [QgsProcessing.SourceType.TypeVectorLine]
             )
         )
 
@@ -941,6 +941,6 @@ class AverageLinesAlgorithm(QgsProcessingAlgorithm):
                 linestring = GeometryUtils.average_linestrings(linestring, candidate, weight)
 
         f.setGeometry(linestring)
-        sink.addFeature(f, QgsFeatureSink.FastInsert)
+        sink.addFeature(f, QgsFeatureSink.Flag.FastInsert)
 
         return {self.OUTPUT: dest_id}
