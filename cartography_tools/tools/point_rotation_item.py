@@ -121,7 +121,7 @@ class PointRotationItem(QgsMapCanvasItem):
         fm = QFontMetricsF(self.marker_font)
 
         # set item size
-        self.item_size.setWidth(self.pixmap.width() + fm.width("360"))
+        self.item_size.setWidth(self.pixmap.width() + fm.horizontalAdvance("360"))
 
         pixmap_height = self.pixmap.height()
         font_height = fm.height()
